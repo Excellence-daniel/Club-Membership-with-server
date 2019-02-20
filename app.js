@@ -2,31 +2,32 @@ var express = require('express');
 var admin = require("firebase-admin");
 var firebase = require('firebase')
 var functions =  require("firebase-functions")
+var cors = require('cors')
+var bodyParser = require('body-parser')
+
 var config = {
     apiKey: "AIzaSyAFWlHfRZVyQcw-lj6chPHrhmNqJks4uGo",
     authDomain: "club-membership-190d2.firebaseapp.com",
     databaseURL: "https://club-membership-190d2.firebaseio.com",
     projectId: "club-membership-190d2",
   };
-firebase.initializeApp(config)
-// var database = firebase.firestore()
-
-var serviceAccount = require("./club-membership-190d2-firebase-adminsdk-rb4dz-f86b88ed73.json");
-
-admin.initializeApp({
+  
+  admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://club-membership-190d2.firebaseio.com"
 });
+
+firebase.initializeApp(config)
+var serviceAccount = require("./club-membership-190d2-firebase-adminsdk-rb4dz-f86b88ed73.json");
+
 var database = admin.firestore()
-var cors = require('cors')
 var app = express();
-var bodyParser = require('body-parser')
 app.use(express.urlencoded({
     extended: true
 }))
-app.use(express.json())
-app.use(cors())
-const port = 2000
+app.use(express.json());
+app.use(cors());
+const port = 2000;
 
 app.listen(port, function () {
     console.log("Working on port 2000") //gets the server working     
@@ -42,10 +43,11 @@ app.post('/', function(req, res){   //onload of all the pages
     }
 })
 
-app.post('/login', function (req, res) {    //for login
+//function that runs on login
+app.post('/login', function (req, res) {  
     console.log(req.body)
-    var email = req.body.email
-    var password = req.body.password
+    var email = req.body.email  //get email in the request body
+    var password = req.body.password    //get password
     if (email === undefined || password === undefined){
         console.log("No Data")
         res.send({status : 400 , LoggedIn : false, statusText : "Wrong Data"})
@@ -62,7 +64,8 @@ app.post('/login', function (req, res) {    //for login
     }
 })
 
-app.post('/signup', function(req, res){     //for sign up
+//function that runs on signUp
+app.post('/signup', function(req, res){    
     console.log(req.body)
     const data = req.body
     if (data){
@@ -98,6 +101,44 @@ app.post('/logout', function(req , res){
     .catch(err=>{
         res.send({LoggedOut : false, status : 400, statusmessage : "Bad Request", errorText : err})
     })
+})
+
+app.post('/getCurrentUserData', function(req, res){
+    const currentUserData = firebase.auth().currentUser
+    if (currentUserData){
+        res.send({UserEmail : currentUserData.email})
+    }else {
+        res.send({UserEmail : null})
+    }
+    console.log("Current User EMail", currentUserData.email)
+})
+
+//this function runs on click of the button Create Club
+app.post('/CreateClub', function(req, res){ 
+    const clubData = req.body;
+    if (clubData){
+        const user = firebase.auth().currentUser
+        if (user){
+            database.collection('Clubs').doc().set({
+                ClubName : clubData.clubName, 
+                ClubType : clubData.clubType, 
+                AdminEmail : clubData.email, 
+                MemberLimit : clubData.memberLimit, 
+                Members : [],
+                Invites : []
+            })
+            .then((res)=>{
+                console.log("Create Club Response", res)
+            })
+            .catch((err)=>{
+                console.log("Create Club Error", err)
+            })
+        }else {
+            res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "No user is logged in"})   //if user is not present 
+        }
+    } else {
+        res.send({status : 400, statusmessage : "Bad Request", errorMessage : "No data in request body"})   //if data is not gotten from the request body
+    }
 })
 
 // module.exports = app
