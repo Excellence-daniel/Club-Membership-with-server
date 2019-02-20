@@ -33,7 +33,7 @@ app.listen(port, function () {
 
 app.post('/', function(req, res){   //onload of all the pages 
     const user = firebase.auth().currentUser
-    console.log("USER", user)
+    console.log("USER","IsPresent")
     if (user !== null){
         res.send({UserPresent : true}) 
     }else {
@@ -43,7 +43,7 @@ app.post('/', function(req, res){   //onload of all the pages
 
 //function that runs on login
 app.post('/login', function (req, res) {  
-    console.log(req.body)
+    // console.log(req.body)
     var email = req.body.email  //get email in the request body
     var password = req.body.password    //get password
     if (email === undefined || password === undefined){
@@ -64,12 +64,12 @@ app.post('/login', function (req, res) {
 
 //function that runs on signUp
 app.post('/signup', function(req, res){    
-    console.log(req.body)
+    // console.log(req.body)
     const data = req.body
     if (data){
         firebase.auth().createUserWithEmailAndPassword(data.email, data.password)
         .then(()=>{
-            database.collection('Users').doc(data.name).set({
+            database.collection('Users').doc().set({
                 Name : data.name, 
                 Email : data.email, 
                 EmailVerified : false, 
@@ -103,10 +103,31 @@ app.post('/logout', function(req , res){
 })
 
 //to get the current user Data 
-app.post('/getCurrentUserData', function(req, res){
+app.post('/getCurrentUserData', async function(req, res){
     const currentUserData = firebase.auth().currentUser
+    let userData;
     if (currentUserData){
-        res.send({UserEmail : currentUserData.email})
+        const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()
+                .then((snapshot)=>{
+                    if(snapshot){
+                        console.log(snapshot)
+                        snapshot.forEach((doc)=>{
+                            // console.log(doc.data())
+                            userData = doc.data()
+                        })
+                        if (userData){
+                            res.send({UserEmail : currentUserData.email, userData : userData})
+                        }else{
+                            res.send({UserEmail : currentUserData.email, userData : null, statusmessage : "no matching documents in firebase"})
+                        }                        
+                    }else {
+                        console.log("No matching documents")
+                        res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
+                    }
+                })
+                .catch((err)=>{
+                    console.log(err)
+                })
     }else {
         res.send({UserEmail : null})
     }
@@ -114,28 +135,33 @@ app.post('/getCurrentUserData', function(req, res){
 })
 
 //this function runs on click of the button Create Club
-app.post('/CreateClub', function(req, res){ 
-    const clubData = req.body;
+app.post('/CreateClub', async function(req, res){ 
+    const clubData = req.body;      //get 
     if (clubData){
         const user = firebase.auth().currentUser
         if (user){
-            database.collection('Clubs').doc().set({
-                ClubName : clubData.clubName, 
-                ClubType : clubData.clubType, 
-                AdminEmail : clubData.email, 
-                MemberLimit : clubData.memberLimit, 
-                Members : [],
-                Invites : []
-            })
-            .then((res)=>{
-                console.log("Create Club Response", res)
-                res.send({status : 200, statusmessage : "Club Created"})
-            })
-            .catch((err)=>{
-                console.log("Create Club Error", err)
-                res.send({status : 400, statusmessage : "Bad Request", errorMessage : err})
-            })
-        }else {
+            const doesClubExist = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()
+            if (doesClubExist.empty === false){
+                res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
+            } else {
+                database.collection('Clubs').doc().set({
+                    ClubName : clubData.clubName, 
+                    ClubType : clubData.clubType, 
+                    AdminEmail : clubData.email, 
+                    MemberLimit : clubData.memberLimit, 
+                    Members : [],
+                    Invites : []
+                })
+                .then((resp)=>{
+                    console.log("Create Club Response", resp)
+                    res.send({status : 200, statusmessage : "Club Created"})
+                })
+                .catch((err)=>{
+                    console.log("Create Club Error", err)
+                    res.send({status : 400, statusmessage : "Bad Request", errorMessage : err})
+                })
+                }
+        } else {
             res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "No user is logged in"})   //if user is not present 
         }
     } else {
