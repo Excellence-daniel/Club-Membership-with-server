@@ -133,6 +133,26 @@ app.post('/getCurrentUserData', async function(req, res){
 })
 
 
+app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
+    const currentUserData = firebase.auth().currentUser;
+    let clubIds = [];
+    let clubData = []
+    if (currentUserData){
+        const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserData.email).get()
+        .then((snapshot)=>{
+            snapshot.forEach((doc)=>{
+                clubIds.push(doc.id)
+                clubData.push(doc.data())
+                console.log("CLUBS CREATED", "Gotten all clubs")
+            })
+            res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : clubIds, clubs : clubData})
+        })
+        .catch((err)=>{
+            res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : []})
+        })
+    }
+})
+
 //this function runs on click of the button Create Club
 app.post('/CreateClub', async function(req, res){ 
     const clubData = req.body;      //get request body
@@ -140,7 +160,7 @@ app.post('/CreateClub', async function(req, res){
         const user = firebase.auth().currentUser        //get current User details
         if (user){
             const doesClubExist = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()  //get data from Clubs using the given clubname
-            if (doesClubExist.empty === false){     //if the return value is empty
+            if (doesClubExist.empty === false){     //if the return value is not empty
                 res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
             } else {
                 //set database if club does not already exist
@@ -168,5 +188,41 @@ app.post('/CreateClub', async function(req, res){
         res.send({status : 400, statusmessage : "Bad Request", errorMessage : "No data in request body"})   //if data is not gotten from the request body
     }
 })
+
+app.post('/deleteClub', async (req, res)=>{
+    const clubInfo = req.body;
+    console.log(clubInfo);
+    const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+    const clubMembers = club.data().Members
+    if (clubMembers.length > 0){
+        clubMembers.forEach((member)=>{
+            var memberMail = member.email;
+            var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
+            .then((snapshot)=>{
+                snapshot.forEach((doc)=>{
+                    var clubsjoined = doc.data().ClubsJoined    //clubs joined of each member 
+                    var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName)     //get the index of this club
+                    clubsjoined.splice(getClubIndex,1)
+                    await database.collection('Users').doc(doc.id).update({
+                        ClubsJoined : clubsjoined
+                    })
+                })
+                await database.collection('Clubs').doc(clubInfo.clubID).delete()
+                .then(()=>{
+                    res.send({status : 200, statusmessage : "Club Deleted"})
+                })
+                .catch(err => {
+                    res.send({status : err.code, statusmessage : err.message})
+                })
+            })
+            .catch((err)=>{
+                console.log(err)
+                res.send({status : err.code, statusmessage : err.message})
+            })
+        })
+    }
+    console.log(club.data().Members)
+})
+
 
 // module.exports = app
