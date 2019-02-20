@@ -91,6 +91,7 @@ app.post('/signup', function(req, res){
     }
 })
 
+
 //function that runs on click LOGOUT button
 app.post('/logout', function(req , res){
     firebase.auth().signOut()
@@ -102,48 +103,47 @@ app.post('/logout', function(req , res){
     })
 })
 
+
 //to get the current user Data 
 app.post('/getCurrentUserData', async function(req, res){
-    const currentUserData = firebase.auth().currentUser
-    let userData;
+    const currentUserData = firebase.auth().currentUser     //get current user details 
+    let userData;   //initialize a varaible
     if (currentUserData){
-        const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()
+        const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()   //get from collection USERS using email
                 .then((snapshot)=>{
                     if(snapshot){
-                        console.log(snapshot)
                         snapshot.forEach((doc)=>{
-                            // console.log(doc.data())
                             userData = doc.data()
                         })
                         if (userData){
-                            res.send({UserEmail : currentUserData.email, userData : userData})
+                            res.send({UserEmail : currentUserData.email, userData : userData})  //if data is gotten
                         }else{
-                            res.send({UserEmail : currentUserData.email, userData : null, statusmessage : "no matching documents in firebase"})
+                            res.send({UserEmail : currentUserData.email, userData : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
                         }                        
                     }else {
-                        console.log("No matching documents")
+                        console.log("No matching documents")    //data is not gotten
                         res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
                     }
                 })
-                .catch((err)=>{
-                    console.log(err)
-                })
+                .catch((err)=>{ console.log(err) })     //catch errors
     }else {
         res.send({UserEmail : null})
     }
     console.log("Current User EMail", currentUserData.email)
 })
 
+
 //this function runs on click of the button Create Club
 app.post('/CreateClub', async function(req, res){ 
-    const clubData = req.body;      //get 
-    if (clubData){
-        const user = firebase.auth().currentUser
+    const clubData = req.body;      //get request body
+    if (clubData){ 
+        const user = firebase.auth().currentUser        //get current User details
         if (user){
-            const doesClubExist = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()
-            if (doesClubExist.empty === false){
+            const doesClubExist = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()  //get data from Clubs using the given clubname
+            if (doesClubExist.empty === false){     //if the return value is empty
                 res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
             } else {
+                //set database if club does not already exist
                 database.collection('Clubs').doc().set({
                     ClubName : clubData.clubName, 
                     ClubType : clubData.clubType, 
