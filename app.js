@@ -2,32 +2,30 @@ var express = require('express');
 var admin = require("firebase-admin");
 var firebase = require('firebase')
 var functions =  require("firebase-functions")
-var cors = require('cors')
-var bodyParser = require('body-parser')
-
 var config = {
     apiKey: "AIzaSyAFWlHfRZVyQcw-lj6chPHrhmNqJks4uGo",
     authDomain: "club-membership-190d2.firebaseapp.com",
     databaseURL: "https://club-membership-190d2.firebaseio.com",
     projectId: "club-membership-190d2",
   };
-  
-  admin.initializeApp({
+firebase.initializeApp(config)
+
+var serviceAccount = require("./club-membership-190d2-firebase-adminsdk-rb4dz-f86b88ed73.json");
+
+admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://club-membership-190d2.firebaseio.com"
 });
-
-firebase.initializeApp(config)
-var serviceAccount = require("./club-membership-190d2-firebase-adminsdk-rb4dz-f86b88ed73.json");
-
 var database = admin.firestore()
+var cors = require('cors')
 var app = express();
+var bodyParser = require('body-parser')
 app.use(express.urlencoded({
     extended: true
 }))
-app.use(express.json());
-app.use(cors());
-const port = 2000;
+app.use(express.json())
+app.use(cors())
+const port = 2000
 
 app.listen(port, function () {
     console.log("Working on port 2000") //gets the server working     
@@ -93,6 +91,7 @@ app.post('/signup', function(req, res){
     }
 })
 
+//function that runs on click LOGOUT button
 app.post('/logout', function(req , res){
     firebase.auth().signOut()
     .then(()=>{
@@ -103,6 +102,7 @@ app.post('/logout', function(req , res){
     })
 })
 
+//to get the current user Data 
 app.post('/getCurrentUserData', function(req, res){
     const currentUserData = firebase.auth().currentUser
     if (currentUserData){
@@ -129,9 +129,11 @@ app.post('/CreateClub', function(req, res){
             })
             .then((res)=>{
                 console.log("Create Club Response", res)
+                res.send({status : 200, statusmessage : "Club Created"})
             })
             .catch((err)=>{
                 console.log("Create Club Error", err)
+                res.send({status : 400, statusmessage : "Bad Request", errorMessage : err})
             })
         }else {
             res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "No user is logged in"})   //if user is not present 
