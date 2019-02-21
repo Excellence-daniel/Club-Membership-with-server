@@ -321,20 +321,20 @@ app.post('/joinClub', async(req, res)=>{
                         Invites : clubInvites
                     })
                     .then(()=> {
-                        res.send({status : 200 , statusmessage : "You have joined this club!"})
+                        res.send({status : 200 , statusmessage : "You have joined this club!"});
                     })
                     .catch((err)=>{
                         console.log(err)
-                        res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"})
+                        res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
                     })
                 })
                 .catch((err)=>{
                     console.log(err)
-                    res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"})
+                    res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
                 })
             } else {
                 console.log("Club Limit Reached. You can't join this club")
-                res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."})
+                res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
             }
         }
 
