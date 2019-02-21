@@ -92,6 +92,44 @@ app.post('/signup', function(req, res){
 })
 
 
+app.post('/VerifyEmail', async(req,res)=>{
+    const userInfo = req.body; 
+    const user = firebase.auth().currentUser
+    let userData, userID;
+    const getUser = await database.collection('Users').where("Email", "==", userInfo.email).get()
+        .then(async (snapshot)=>{
+            snapshot.forEach((doc)=>{
+                userData = doc.data()
+                userID = doc.id
+            })
+            if (userData.EmailVerified !== true){
+                await user.updateProfile({
+                    emailVerified : true
+                })
+                .then(async()=>{
+                    await database.collection('Users').doc(userID).update({
+                        EmailVerified : true
+                    })
+                    .then(()=>{
+                        res.send({status : 200, statusmessage : "success"})
+                    })
+                    .catch((err)=>{
+                        res.send({status : err.code, statusmessage : err.message})
+                    })
+                })
+                .catch((err)=>{
+                    res.send({status : err.code, statusmessage : err.message})
+                })
+            } else {
+                res.send({status : 401 , statusmessage : "Email Verfieid Already"})
+            }
+        })
+        .catch((err)=>{
+            res.send({status : 400, statusmessage : err.message, errorMessage : "Bad Request"})
+        })
+})
+
+
 //function that runs on click LOGOUT button
 app.post('/logout', function(req , res){
     firebase.auth().signOut()
@@ -151,8 +189,8 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
             const getClubJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserData.email).get()            
             .then(snapshot => {
                 snapshot.forEach((doc)=>{
-                    joinedClubs.push(doc.data().ClubsJoined)
-                    console.log("CLUBS JOINED", doc.data().ClubsJoined)
+                    joinedClubs.push(doc.data().ClubJoined)
+                    console.log("CLUBS JOINED", doc.data().ClubJoined)
                 })
                 res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})
             })
@@ -235,14 +273,14 @@ app.post('/leaveClub', async (req, res)=>{
     const getUserData = await database.collection('Users').where("Email", "==", user.email).get()
     .then((snapshot)=>{
         snapshot.forEach((doc)=>{
-            clubsjoined = doc.data().ClubsJoined;
+            clubsjoined = doc.data().ClubJoined;
             userID = doc.id;
         })
     })
     var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
     clubsjoined.splice(clubID, 1);
     await dotabase.collection('Users').doc(userID).update({
-        ClubsJoined : clubsjoined
+        ClubJoined : clubsjoined
     })
         .then(async()=>{
             const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
@@ -274,14 +312,16 @@ app.post('/leaveClub', async (req, res)=>{
 })
 
 app.post('/joinClub', async(req, res)=>{
+    await firebase.auth().signOut();
     const clubInfo = req.body;
     console.log(clubInfo)
-    let clubID, clubMembers, clubMemberLimit, userClubsJoined, userID, userData;  
+    let clubID, clubMembers, clubMemberLimit, userClubsJoined, userID, userData, clubInvites;  
     const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
     const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
     const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-    //check if the club exists
-    if (getUser.docs.length > 0){
+    //check if the invited email has an account
+    if (getUser.docs.length > 0){ 
+        //check if the club exists
         if (getClub.empty === true){
             console.log("Club does not exist")
             res.send({status : 401 , statusmessage : "Club does not exist"})
@@ -289,7 +329,8 @@ app.post('/joinClub', async(req, res)=>{
             //get members of the club
             getClub.forEach((snapshot)=>{
                 console.log(snapshot.data().Members)
-                clubMembers = snapshot.data().Members
+                clubMembers = snapshot.data().Members;
+                clubInvites = snapshot.data().Invites;
                 clubMemberLimit = snapshot.data().MemberLimit
                 clubID = snapshot.id
             })
@@ -301,24 +342,17 @@ app.post('/joinClub', async(req, res)=>{
             } else {
                 //check if the member limit is reached
                 if (clubMembers.length < clubMemberLimit){      //if limit is not reached
-                    // getUser.then((snapshot)=>{
-                    //     userID = snapshot.id;   //get user id 
-                    //     userData = snapshot.data()  //get all userData
-                    //     console.log("SNAP USER", snapshot.data())
-                    //     console.log("SNAPSHOT", snapshot.data())
-                    // })
-                    console.log("USER DOCS", getUser.docs)
                     getUser.forEach(snapshot=>{
-                        // userID = snapshot.id;   //get user id 
-                        // userData = snapshot.data()  //get all userData
-                        // console.log("SNAP USER", snapshot.data())
+                        userID = snapshot.id;   //get user id 
+                        userData = snapshot.data()  //get all userData
+                        console.log("SNAP USER", snapshot.data())
                         console.log("SNAPSHOT", snapshot.data())
                     })
                     console.log("USER DATA" , userData)
-                    userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
+                    userClubsJoined = userData.ClubJoined;     //club joined array in the user data gottten
                     userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
                     database.collection('Users').doc(userID).update({
-                        ClubsJoined : userClubsJoined       //update array
+                        ClubJoined : userClubsJoined       //update array
                     })
                     .then(()=> {
                         //if update is successful
@@ -350,7 +384,8 @@ app.post('/joinClub', async(req, res)=>{
             }
         }
     }else {
-        alert("You are not a user. Would you like to sign up?. After sign up, you can try to join the club again.")
+        res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
+        console.log('User does not have an account with club membership')
     }
 })
 
