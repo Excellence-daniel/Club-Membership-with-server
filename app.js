@@ -107,18 +107,19 @@ app.post('/logout', function(req , res){
 //to get the current user Data 
 app.post('/getCurrentUserData', async function(req, res){
     const currentUserData = firebase.auth().currentUser     //get current user details 
-    let userData;   //initialize a varaible
+    let userData , userID;   //initialize a varaible
     if (currentUserData){
         const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()   //get from collection USERS using email
                 .then((snapshot)=>{
                     if(snapshot){
                         snapshot.forEach((doc)=>{
                             userData = doc.data()
+                            userID = doc.id
                         })
                         if (userData){
-                            res.send({UserEmail : currentUserData.email, userData : userData})  //if data is gotten
+                            res.send({UserEmail : currentUserData.email, userData : userData, userID : userID})  //if data is gotten
                         }else{
-                            res.send({UserEmail : currentUserData.email, userData : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
+                            res.send({UserEmail : currentUserData.email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
                         }                        
                     }else {
                         console.log("No matching documents")    //data is not gotten
@@ -195,11 +196,11 @@ app.post('/deleteClub', async (req, res)=>{
     const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
     const clubMembers = club.data().Members
     if (clubMembers.length > 0){
-        clubMembers.forEach((member)=>{
+        clubMembers.forEach( async (member)=>{
             var memberMail = member.email;
             var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
-            .then((snapshot)=>{
-                snapshot.forEach((doc)=>{
+            .then(async (snapshot)=>{
+                snapshot.forEach( async (doc)=>{
                     var clubsjoined = doc.data().ClubsJoined    //clubs joined of each member 
                     var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName)     //get the index of this club
                     clubsjoined.splice(getClubIndex,1)
@@ -220,8 +221,62 @@ app.post('/deleteClub', async (req, res)=>{
                 res.send({status : err.code, statusmessage : err.message})
             })
         })
+    }else {
+        await database.collection('Clubs').doc(clubInfo.clubID).delete()
+        .then(()=>{
+            res.send({status : 200, statusmessage : "Club Deleted"})
+        })
+        .catch(err => {
+            res.send({status : err.code, statusmessage : err.message})
+        })
     }
+
     console.log(club.data().Members)
+})
+
+app.post('/updateProfile', async (req, res)=>{
+    const userData = req.body
+    await database.collection('Users').doc(userData.userID).update({
+        Name : userData.Name, 
+        Email : userData.Email,
+        Address : userData.Address,
+        Phone : userData.Phone
+    })
+    .then(()=>{
+        res.send({status : 200, statusmessage : "Success"})
+    })
+    .catch((err)=>{
+        res.send({status : 400, statusmessage : err.message , errorMessage : "Bad Request"})
+    })
+})
+
+
+app.post('/InviteMembers', async (req, res)=>{
+    var invites = req.body 
+    const newInvite = {"email": invites.email, "accepted": false}
+    const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get()
+    const clubInvites = await getClubWithDocID.data().Invites
+    const clubMemberLimit = await getClubWithDocID.data().MemberLimit
+    const clubMembers = await getClubWithDocID.data().Members
+    var clubMembersLength = clubMembers.length
+
+    if (clubMembersLength < clubMemberLimit){
+        clubInvites.push(newInvite)
+        console.log ("Invites", clubInvites)
+        await database.collection('Clubs').doc(invites.clubID).update({
+            Invites : clubInvites
+        })
+        .then((data)=>{
+            console.log("Update Status", data)
+            res.send({status : 200, statusmessage : "Success"})
+        })
+        .catch((err)=>{
+            console.log("Update Error", err)
+            res.send({status : err.coode, statusmessage : err.message, errorMessage : "Bad Request : 400"})
+        })
+    } else {
+        res.send({status : 401, statusmessage : "Members Limit reached", errorMessage : "Unauthorized request"})
+    }
 })
 
 
