@@ -190,6 +190,12 @@ app.post('/CreateClub', async function(req, res){
     }
 })
 
+app.post('/EditClub', async (req, res)=>{
+    const clubInfo = req.body;
+    const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+    console.log(club.data())
+})
+
 app.post('/deleteClub', async (req, res)=>{
     const clubInfo = req.body;
     console.log(clubInfo);
