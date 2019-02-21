@@ -301,17 +301,18 @@ app.post('/joinClub', async(req, res)=>{
             //check if the member limit is reached
             if (clubMembers.length < clubMemberLimit){      //if limit is not reached
                 getUser.forEach((snapshot)=>{
-                    userClubsJoined = snapshot.data().ClubsJoined;
-                    userID = snapshot.id;
-                    userData = snapshot.data()
+                    userID = snapshot.id;   //get user id 
+                    userData = snapshot.data()  //get all userData
                 })
-                userClubsJoined.push(newClub);
+                userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
+                userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
                 database.collection('Users').doc(userID).update({
-                    ClubsJoined : userClubsJoined
+                    ClubsJoined : userClubsJoined       //update array
                 })
                 .then(()=> {
-                    const newMember = {"name": userData.Name, "email":userData.Email}
-                    clubMembers.push(newMember);
+                    //if update is successful
+                    const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
+                    clubMembers.push(newMember);    //append into the array clubMembers
                     const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);
                     clubInvites[inviteID].accepted = true;
                     database.collection('Clubs').doc(clubID).update({
