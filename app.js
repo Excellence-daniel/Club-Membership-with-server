@@ -274,17 +274,22 @@ app.post('/leaveClub', async (req, res)=>{
 })
 
 app.post('/joinClub', async(req, res)=>{
-    const clubInfo = req.body; 
+    const clubInfo = req.body;
+    let clubMembers;  
     const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
     const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-    console.log("CLUB EMPTY?", getClub.empty)
+    //check if the club exists
     if (getClub.empty === true){
         console.log("Club does not exist")
         res.send({status : 401 , statusmessage : "Club does not exist"})
     } else {
+        //get members of the club
         getClub.forEach((snapshot)=>{
             console.log(snapshot.data().Members)
+            clubMembers = snapshot.data().Members
         })
+        //check if the user is alredy a member of the club. 
+
     }
 })
 
