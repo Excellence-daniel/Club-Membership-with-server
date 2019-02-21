@@ -136,21 +136,33 @@ app.post('/getCurrentUserData', async function(req, res){
 
 app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
     const currentUserData = firebase.auth().currentUser;
-    let clubIds = [];
-    let clubData = []
+    let createdClubIds = [];
+    let createdClubData = []
+    let joinedClubs = [];
     if (currentUserData){
         const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserData.email).get()
-        .then((snapshot)=>{
+        .then(async(snapshot)=>{
             snapshot.forEach((doc)=>{
-                clubIds.push(doc.id)
-                clubData.push(doc.data())
+                createdClubIds.push(doc.id)
+                createdClubData.push(doc.data())
                 console.log("CLUBS CREATED", "Gotten all clubs")
             })
-            res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : clubIds, clubs : clubData})
+
+            const getClubJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserData.email).get()            
+            .then(snapshot => {
+                snapshot.forEach((doc)=>{
+                    joinedClubs.push(doc.data().ClubsJoined)
+                    console.log("CLUBS JOINED", doc.data().ClubsJoined)
+                })
+                res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})
+            })
+            .catch((err)=>{
+                res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : []})
+            })
         })
         .catch((err)=>{
-            res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : []})
-        })
+            res.send({status : 400, statusmessage : "Bad Request II", clubID : [], clubs : [], clubsjoined : []})
+        })    
     }
 })
 
@@ -216,6 +228,10 @@ app.post('/UpdateClub', async (req,res)=>{
     })
 })
 
+app.post('/leaveClub', async (req, res)=>{
+    
+})
+
 app.post('/deleteClub', async (req, res)=>{
     const clubInfo = req.body;
     console.log(clubInfo);
@@ -258,6 +274,19 @@ app.post('/deleteClub', async (req, res)=>{
     }
 
     console.log(club.data().Members)
+})
+
+app.post('/getClubMembers', async (req, res)=>{
+    const clubInfo = req.body;
+    const clubMembers = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+    .then((snapshot)=>{
+        snapshot.forEach((doc)=>{
+            console.log(doc.data().Members)
+        })
+    })
+    .catch((err)=>{
+        console.log(err)
+    })
 })
 
 app.post('/updateProfile', async (req, res)=>{
