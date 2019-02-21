@@ -76,7 +76,7 @@ app.post('/signup', function(req, res){
                 PhoneNumber : data.phone, 
                 Address : data.address, 
                 Password : data.password, 
-                ClubJoined : []
+                ClubsJoined : []
             }).then(()=>{
                 console.log("User sign in successful")
                 res.send({signInStatus : 'success'})
@@ -186,20 +186,20 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
                 console.log("CLUBS CREATED", "Gotten all clubs")
             })
 
-            const getClubJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserData.email).get()            
+            const getClubsJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserData.email).get()            
             .then(snapshot => {
                 snapshot.forEach((doc)=>{
-                    joinedClubs.push(doc.data().ClubJoined)
-                    console.log("CLUBS JOINED", doc.data().ClubJoined)
+                    joinedClubs.push(doc.data().ClubsJoined)
+                    console.log("CLUBS JOINED", doc.data().ClubsJoined)
                 })
                 res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})
             })
             .catch((err)=>{
-                res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : []})
+                res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : [[]]})
             })
         })
         .catch((err)=>{
-            res.send({status : 400, statusmessage : "Bad Request II", clubID : [], clubs : [], clubsjoined : []})
+            res.send({status : 400, statusmessage : "Bad Request II", clubID : [], clubs : [], clubsjoined : [[]]})
         })    
     }
 })
@@ -273,14 +273,14 @@ app.post('/leaveClub', async (req, res)=>{
     const getUserData = await database.collection('Users').where("Email", "==", user.email).get()
     .then((snapshot)=>{
         snapshot.forEach((doc)=>{
-            clubsjoined = doc.data().ClubJoined;
+            clubsjoined = doc.data().ClubsJoined;
             userID = doc.id;
         })
     })
     var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
     clubsjoined.splice(clubID, 1);
-    await dotabase.collection('Users').doc(userID).update({
-        ClubJoined : clubsjoined
+    await database.collection('Users').doc(userID).update({
+        ClubsJoined : clubsjoined
     })
         .then(async()=>{
             const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
@@ -293,7 +293,7 @@ app.post('/leaveClub', async (req, res)=>{
             })
         })
         const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === user.email)
-        const getUserIDInClubInvitesArr = clubMembers.findIndex(member => member.email === user.email)
+        const getUserIDInClubInvitesArr = clubInvites.findIndex(member => member.email === user.email)
 
         clubMembers.splice(getUserIDInClubMembersArr, 1);
         clubInvites.splice(getUserIDInClubInvitesArr, 1);
@@ -349,10 +349,10 @@ app.post('/joinClub', async(req, res)=>{
                         console.log("SNAPSHOT", snapshot.data())
                     })
                     console.log("USER DATA" , userData)
-                    userClubsJoined = userData.ClubJoined;     //club joined array in the user data gottten
+                    userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
                     userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
                     database.collection('Users').doc(userID).update({
-                        ClubJoined : userClubsJoined       //update array
+                        ClubsJoined : userClubsJoined       //update array
                     })
                     .then(()=> {
                         //if update is successful
@@ -434,15 +434,19 @@ app.post('/deleteClub', async (req, res)=>{
 })
 
 app.post('/getClubMembers', async (req, res)=>{
-    const clubInfo = req.body;
+    const clubInfo = req.body; 
+    let members;
     const clubMembers = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
     .then((snapshot)=>{
         snapshot.forEach((doc)=>{
             console.log(doc.data().Members)
+            members = doc.data().Members;
         })
+        res.send({status : 200, statusmessage : "success", clubMembers : members})
     })
     .catch((err)=>{
         console.log(err)
+        res.send({status : 400, statusmessage : err.message, errorMessage : "Bad Request"})
     })
 })
 
