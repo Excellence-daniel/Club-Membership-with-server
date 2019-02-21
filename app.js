@@ -229,7 +229,48 @@ app.post('/UpdateClub', async (req,res)=>{
 })
 
 app.post('/leaveClub', async (req, res)=>{
-    
+    const clubInfo = req.body;
+    let clubsjoined, userID, clubMembers, clubInvites, clubID;
+    const user = await firebase.auth().currentUser;
+    const getUserData = await database.collection('Users').where("Email", "==", user.email).get()
+    .then((snapshot)=>{
+        snapshot.forEach((doc)=>{
+            clubsjoined = doc.data().ClubsJoined;
+            userID = doc.id;
+        })
+    })
+    var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
+    clubsjoined.splice(clubID, 1);
+    await dotabase.collection('Users').doc(userID).update({
+        ClubsJoined : clubsjoined
+    })
+        .then(async()=>{
+            const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+            .then((snapshot)=>{
+                snapshot.forEach((doc)=>{
+                    clubMembers = doc.data().Members;
+                    clubInvites = doc.data().Invites;
+                    clubID = doc.id;
+                })
+            })
+        })
+        const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === user.email)
+        const getUserIDInClubInvitesArr = clubMembers.findIndex(member => member.email === user.email)
+
+        clubMembers.splice(getUserIDInClubMembersArr, 1);
+        clubInvites.splice(getUserIDInClubInvitesArr, 1);
+
+        await database.collection('Clubs').doc(clubID).update({
+            Members : clubMembers,
+            Invites : clubInvites
+        })
+        .then(()=>{
+            res.send({status : 200, statusmessage : "success"})
+        })
+        .catch((err)=>{
+            res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})
+        })
+
 })
 
 app.post('/deleteClub', async (req, res)=>{
