@@ -230,7 +230,7 @@ app.post('/UpdateClub', async (req,res)=>{
 
 app.post('/leaveClub', async (req, res)=>{
     const clubInfo = req.body;
-    let clubsjoined, userID, clubMembers, clubInvites, clubID;
+    let clubsjoined, userID, clubMembers, clubInvites, clubbID;
     const user = await firebase.auth().currentUser;
     const getUserData = await database.collection('Users').where("Email", "==", user.email).get()
     .then((snapshot)=>{
@@ -250,7 +250,7 @@ app.post('/leaveClub', async (req, res)=>{
                 snapshot.forEach((doc)=>{
                     clubMembers = doc.data().Members;
                     clubInvites = doc.data().Invites;
-                    clubID = doc.id;
+                    clubbID = doc.id;
                 })
             })
         })
@@ -260,7 +260,7 @@ app.post('/leaveClub', async (req, res)=>{
         clubMembers.splice(getUserIDInClubMembersArr, 1);
         clubInvites.splice(getUserIDInClubInvitesArr, 1);
 
-        await database.collection('Clubs').doc(clubID).update({
+        await database.collection('Clubs').doc(clubbID).update({
             Members : clubMembers,
             Invites : clubInvites
         })
@@ -271,6 +271,21 @@ app.post('/leaveClub', async (req, res)=>{
             res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})
         })
 
+})
+
+app.post('/joinClub', async(req, res)=>{
+    const clubInfo = req.body; 
+    const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
+    const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+    console.log("CLUB EMPTY?", getClub.empty)
+    if (getClub.empty === true){
+        console.log("Club does not exist")
+        res.send({status : 401 , statusmessage : "Club does not exist"})
+    } else {
+        getClub.forEach((snapshot)=>{
+            console.log(snapshot.data().Members)
+        })
+    }
 })
 
 app.post('/deleteClub', async (req, res)=>{
