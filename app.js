@@ -31,8 +31,8 @@ app.listen(port, function () {
     console.log("Working on port 2000") //gets the server working     
 })
 
-app.post('/', function(req, res){   //onload of all the pages 
-    const user = firebase.auth().currentUser
+app.post('/', async function(req, res){   //onload of all the pages 
+    const user = await firebase.auth().currentUser
     console.log("USER","IsPresent")
     if (user !== null){
         res.send({UserPresent : true}) 
@@ -106,7 +106,7 @@ app.post('/logout', function(req , res){
 
 //to get the current user Data 
 app.post('/getCurrentUserData', async function(req, res){
-    const currentUserData = firebase.auth().currentUser     //get current user details 
+    const currentUserData = await firebase.auth().currentUser     //get current user details 
     let userData , userID;   //initialize a varaible
     if (currentUserData){
         const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()   //get from collection USERS using email
@@ -193,7 +193,12 @@ app.post('/CreateClub', async function(req, res){
 app.post('/EditClub', async (req, res)=>{
     const clubInfo = req.body;
     const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-    console.log(club.data())
+    .then((club)=>{
+        res.send({status : 200, statusmessage : "success", clubdata : club.data()})
+    })
+    .catch((err)=>{
+        res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
+    })
 })
 
 app.post('/deleteClub', async (req, res)=>{
