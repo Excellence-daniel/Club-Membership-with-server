@@ -201,6 +201,21 @@ app.post('/EditClub', async (req, res)=>{
     })
 })
 
+app.post('/UpdateClub', async (req,res)=>{
+    const clubInfo = req.body; 
+    const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
+        ClubName : clubInfo.clubname, 
+        ClubType : clubInfo.clubtype, 
+        MemberLimit : clubInfo.membersLimit
+    })
+    .then((data)=> {
+        res.send({status : 200, statusmessage : "success"})
+    })
+    .catch(err=>{
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
+    })
+})
+
 app.post('/deleteClub', async (req, res)=>{
     const clubInfo = req.body;
     console.log(clubInfo);
