@@ -275,8 +275,10 @@ app.post('/leaveClub', async (req, res)=>{
 
 app.post('/joinClub', async(req, res)=>{
     const clubInfo = req.body;
-    let clubMembers, clubMemberLimit;  
+    let clubID, clubMembers, clubMemberLimit, userClubsJoined, userID, userData;  
     const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
+    const newMember = {"name": user.Name, "email":user.Email}
+    const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
     const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
     //check if the club exists
     if (getClub.empty === true){
@@ -288,6 +290,7 @@ app.post('/joinClub', async(req, res)=>{
             console.log(snapshot.data().Members)
             clubMembers = snapshot.data().Members
             clubMemberLimit = snapshot.data().MemberLimit
+            clubID = snapshot.id
         })
         //check if the user is alredy a member of the club. 
         var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
@@ -296,8 +299,37 @@ app.post('/joinClub', async(req, res)=>{
             res.send({status : 401 , statusmessage : "You already belong to this club"})
         } else {
             //check if the member limit is reached
-            if (clubMembers.length < clubMemberLimit){
-                
+            if (clubMembers.length < clubMemberLimit){      //if limit is not reached
+                getUser.forEach((snapshot)=>{
+                    userClubsJoined = snapshot.data().ClubsJoined;
+                    userID = snapshot.id;
+                    userData = snapshot.data()
+                })
+                userClubsJoined.push(newClub);
+                database.collection('Users').doc(userID).update({
+                    ClubsJoined : userClubsJoined
+                })
+                .then(()=> {
+                    const newMember = {"name": userData.Name, "email":userData.Email}
+                    clubMembers.push(newMember);
+                    const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);
+                    clubInvites[inviteID].accepted = true;
+                    database.collection('Clubs').doc(clubID).update({
+                        Members : clubMembers,
+                        Invites : clubInvites
+                    })
+                    .then(()=> {
+                        res.send({status : 200 , statusmessage : "You have joined this club!"})
+                    })
+                    .catch((err)=>{
+                        console.log(err)
+                        res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"})
+                    })
+                })
+                .catch((err)=>{
+                    console.log(err)
+                    res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"})
+                })
             } else {
                 console.log("Club Limit Reached. You can't join this club")
                 res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."})
