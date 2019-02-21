@@ -313,8 +313,9 @@ app.post('/joinClub', async(req, res)=>{
                     //if update is successful
                     const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
                     clubMembers.push(newMember);    //append into the array clubMembers
-                    const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);
-                    clubInvites[inviteID].accepted = true;
+                    const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);  //get the index of the invite in the club user email
+                    clubInvites[inviteID].accepted = true;      //change the boolean value to true
+                    //update Members and Invites
                     database.collection('Clubs').doc(clubID).update({
                         Members : clubMembers,
                         Invites : clubInvites
