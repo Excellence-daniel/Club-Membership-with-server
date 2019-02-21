@@ -275,7 +275,7 @@ app.post('/leaveClub', async (req, res)=>{
 
 app.post('/joinClub', async(req, res)=>{
     const clubInfo = req.body;
-    let clubMembers;  
+    let clubMembers, clubMemberLimit;  
     const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
     const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
     //check if the club exists
@@ -287,8 +287,22 @@ app.post('/joinClub', async(req, res)=>{
         getClub.forEach((snapshot)=>{
             console.log(snapshot.data().Members)
             clubMembers = snapshot.data().Members
+            clubMemberLimit = snapshot.data().MemberLimit
         })
         //check if the user is alredy a member of the club. 
+        var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
+        if (checkIfUserEmailExistsInClubMemberArr.length > 0){
+            console.log("You already belong to this club")
+            res.send({status : 401 , statusmessage : "You already belong to this club"})
+        } else {
+            //check if the member limit is reached
+            if (clubMembers.length < clubMemberLimit){
+                
+            } else {
+                console.log("Club Limit Reached. You can't join this club")
+                res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."})
+            }
+        }
 
     }
 })
