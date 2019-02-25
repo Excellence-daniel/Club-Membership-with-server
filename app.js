@@ -33,17 +33,30 @@ app.listen(port, function () {
 
 app.post('/', async function(req, res){   //onload of all the pages 
     const user = await firebase.auth().currentUser
+    let verifiedEmail;
+    await database.collection('Users').where('Email', '==',user.email).get()
+        .then(snapshot => {
+            snapshot.forEach((doc)=>{
+                console.log(doc.data())
+                verifiedEmail = doc.data().EmailVerified
+            })
+        })
+    console.log(user)
     console.log("USER","IsPresent")
     if (user !== null){
-        res.send({UserPresent : true}) 
+        if (verifiedEmail === true){
+            res.send({status : 200, UserPresent : true}) 
+        }else {
+            res.send({UserPresent : false, status : 401 , statusmessage :" User Email not Verfied"}) 
+        }
     }else {
-        res.send({UserPresent : false}) 
+        res.send({status : 400,statusmessage : 'Error. Try Again', UserPresent : false}) 
     }
 })
 
 //function that runs on login
 app.post('/login', function (req, res) {  
-    // console.log(req.body)
+    let verifiedEmail;
     var email = req.body.email  //get email in the request body
     var password = req.body.password    //get password
     if (email === undefined || password === undefined){
@@ -51,13 +64,24 @@ app.post('/login', function (req, res) {
         res.send({status : 400 , LoggedIn : false, statusText : "Wrong Data"})
     } else {
         firebase.auth().signInWithEmailAndPassword(email, password)
-        .then((data)=>{
+        .then(async(data)=>{
+            await database.collection('Users').where('Email','==',email).get()
+                .then((snapshot)=>{
+                    snapshot.forEach((doc)=>{
+                        verifiedEmail = doc.data().EmailVerified;
+                    })
+                })
+            if (verifiedEmail === true){
             console.log("User Sign In Successful")
-            res.send({status : 200 ,LoggedIn : true, statusText : "Succesful Login", userDetails : data})
+                res.send({status : 200 ,LoggedIn : true, statusText : "Succesful Login", userDetails : data})
+            } else {
+                console.log("User Login Successful but email is not verified")
+                res.send({status : 200 ,LoggedIn : false, statusmessage : "Verify your email to login", userDetails : data})
+            }
         })
         .catch((err)=>{
             console.log("Error :", err.code, err.message)
-            res.send({LoggedIn : false})
+            res.send({status : 400, statusmessage : err.message, LoggedIn : false})
         })
     }
 })
