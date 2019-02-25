@@ -3,18 +3,18 @@ var admin = require("firebase-admin");
 var firebase = require('firebase')
 var functions =  require("firebase-functions")
 var config = {
-    apiKey: "AIzaSyAFWlHfRZVyQcw-lj6chPHrhmNqJks4uGo",
-    authDomain: "club-membership-190d2.firebaseapp.com",
-    databaseURL: "https://club-membership-190d2.firebaseio.com",
-    projectId: "club-membership-190d2",
+    apiKey: "AIzaSyBmlRfFT3kXI2PrhP345AYsQFdeAYJL0po",
+    authDomain: "club-membership-app.firebaseapp.com",
+    databaseURL: "https://club-membership-app.firebaseio.com",
+    projectId: "club-membership-app",
   };
 firebase.initializeApp(config)
 
-var serviceAccount = require("./club-membership-190d2-firebase-adminsdk-rb4dz-f86b88ed73.json");
+var serviceAccount = require("./club-membership-app-firebase-adminsdk-o25at-a9186c469e.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://club-membership-190d2.firebaseio.com"
+  databaseURL: "https://club-membership-app.firebaseio.com"
 });
 var database = admin.firestore()
 var cors = require('cors')
@@ -203,6 +203,7 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
         })    
     }
 })
+
 
 //this function runs on click of the button Create Club
 app.post('/CreateClub', async function(req, res){ 
@@ -456,7 +457,7 @@ app.post('/updateProfile', async (req, res)=>{
         Name : userData.Name, 
         Email : userData.Email,
         Address : userData.Address,
-        Phone : userData.Phone
+        PhoneNumber : userData.Phone
     })
     .then(()=>{
         res.send({status : 200, statusmessage : "Success"})
