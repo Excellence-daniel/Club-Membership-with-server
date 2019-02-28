@@ -3,7 +3,7 @@ var admin = require("firebase-admin");
 var firebase = require('firebase')
 var functions =  require("firebase-functions")
 var config = {
-    apiKey: "AIzaSyBmlRfFT3kXI2PrhP345AYsQFdeAYJL0po",
+
     authDomain: "club-membership-app.firebaseapp.com",
     databaseURL: "https://club-membership-app.firebaseio.com",
     projectId: "club-membership-app",
