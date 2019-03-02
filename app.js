@@ -1,4 +1,5 @@
 var express = require('express');
+var uuidv4 = require('uuid/v4'); //for generating unique IDs for users
 var admin = require("firebase-admin");
 var firebase = require('firebase')
 var config = {
@@ -86,6 +87,8 @@ app.post('/login', async(req, res)=>{
 //function that runs on signUp
 app.post('/signup', async (req, res)=>{   
     const data = req.body
+    const UserUUID = uuidv4();
+    console.log(UserUUID);
     if (data){
         try{
             admin.auth().createUser({
@@ -100,7 +103,8 @@ app.post('/signup', async (req, res)=>{
                     PhoneNumber : data.phone, 
                     Address : data.address, 
                     Password : data.password, 
-                    ClubsJoined : []
+                    ClubsJoined : [], 
+                    UserID : UserUUID
                 })
                 console.log("User sign in successful"); 
                 res.send({signInStatus : 'success'});
