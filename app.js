@@ -1,7 +1,6 @@
 var express = require('express');
 var admin = require("firebase-admin");
 var firebase = require('firebase')
-var functions =  require("firebase-functions")
 var config = {
     apiKey: "AIzaSyBmlRfFT3kXI2PrhP345AYsQFdeAYJL0po",
     authDomain: "club-membership-app.firebaseapp.com",
@@ -32,293 +31,305 @@ app.listen(port, function () {
 })
 
 app.post('/', async function(req, res){   //onload of all the pages 
-    const user = await firebase.auth().currentUser
+    const userData = req.body;
     let verifiedEmail;
-    await database.collection('Users').where('Email', '==',user.email).get()
-        .then(snapshot => {
-            snapshot.forEach((doc)=>{
-                console.log(doc.data())
-                verifiedEmail = doc.data().EmailVerified
-            })
-        })
-    console.log(user)
-    console.log("USER","IsPresent")
-    if (user !== null){
-        if (verifiedEmail === true){
-            res.send({status : 200, UserPresent : true}) 
-        }else {
-            res.send({UserPresent : false, status : 401 , statusmessage :" User Email not Verfied"}) 
+    if (userData.currentUserEmail !== undefined){
+        const currUser = await admin.auth().getUserByEmail(userData.currentUserEmail)
+        if (currUser){
+            try {
+                const getUser =  await database.collection('Users').where('Email', '==', userData.currentUserEmail).get()
+                getUser.forEach((doc)=>{
+                    verifiedEmail = doc.data().EmailVerified
+                })
+                if (verifiedEmail === true){
+                    res.send({status : 200, UserPresent : true}) 
+                } else {
+                    console.log("User Email not defined in post /")
+                    res.send({UserPresent : false, status : 401 , statusmessage :" User Email not Verified"}) 
+                }
+            }
+            catch(err){
+                console.log("hello err in post /", err)
+                res.send({status : 400, statusmessage : err.message, UserPresent : false })
+            }
         }
-    }else {
-        res.send({status : 400,statusmessage : 'Error. Try Again', UserPresent : false}) 
+    } else {
+        console.log("No User Logged In")
     }
 })
 
 //function that runs on login
-app.post('/login', function (req, res) {  
-    let verifiedEmail;
-    var email = req.body.email  //get email in the request body
-    var password = req.body.password    //get password
-    if (email === undefined || password === undefined){
-        console.log("No Data")
-        res.send({status : 400 , LoggedIn : false, statusText : "Wrong Data"})
-    } else {
-        firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(async(data)=>{
-            await database.collection('Users').where('Email','==',email).get()
-                .then((snapshot)=>{
-                    snapshot.forEach((doc)=>{
+app.post('/login', async(req, res)=>{  
+    let verifiedEmail, currentUserData;
+    const userData = req.body
+        try {
+            const signInQuery = await firebase.auth().signInWithEmailAndPassword(userData.email, userData.password);
+            const user = await database.collection('Users').where('Email','==',userData.email).get()
+            user.forEach((doc)=>{
                         verifiedEmail = doc.data().EmailVerified;
-                    })
-                })
+                        currentUserData = doc.data()
+                    })        
             if (verifiedEmail === true){
-            console.log("User Sign In Successful")
-                res.send({status : 200 ,LoggedIn : true, statusText : "Succesful Login", userDetails : data})
+                console.log("User Sign In Successful")
+                res.send({status : 200 ,LoggedIn : true, statusText : "Succesful Login", userDetails : currentUserData})
             } else {
                 console.log("User Login Successful but email is not verified")
-                res.send({status : 200 ,LoggedIn : false, statusmessage : "Verify your email to login", userDetails : data})
+                res.send({status : 200 ,LoggedIn : false, statusmessage : "Verify your email to login", userDetails : currentUserData})
             }
-        })
-        .catch((err)=>{
-            console.log("Error :", err.code, err.message)
+        }
+        catch(err) {
+            console.log("Error", err)
             res.send({status : 400, statusmessage : err.message, LoggedIn : false})
-        })
-    }
-})
+        }
+    })
 
 //function that runs on signUp
-app.post('/signup', function(req, res){    
-    // console.log(req.body)
+app.post('/signup', async (req, res)=>{   
     const data = req.body
     if (data){
-        firebase.auth().createUserWithEmailAndPassword(data.email, data.password)
-        .then(()=>{
-            database.collection('Users').doc().set({
-                Name : data.name, 
-                Email : data.email, 
-                EmailVerified : false, 
-                PhoneNumber : data.phone, 
-                Address : data.address, 
-                Password : data.password, 
-                ClubsJoined : []
-            }).then(()=>{
-                console.log("User sign in successful")
-                res.send({signInStatus : 'success'})
-            }).catch(err=>{
-                console.log("Err-SignUp-1", err)
-            res.send({signInStatus : 'failed'})
+        try{
+            admin.auth().createUser({
+                email : data.email, 
+                password : data.password
             })
-        }).catch((err)=>{
-            console.log("Err-SignUp-2", err)
-            res.send({signInStatus : 'failed'})
-        })
+            .then(async()=>{
+                await database.collection('Users').doc().set({
+                    Name : data.name, 
+                    Email : data.email, 
+                    EmailVerified : false, 
+                    PhoneNumber : data.phone, 
+                    Address : data.address, 
+                    Password : data.password, 
+                    ClubsJoined : []
+                })
+                console.log("User sign in successful"); 
+                res.send({signInStatus : 'success'});
+            })
+            .catch(err=>{
+                console.log("/signup ---", err.message)
+            })
+        } 
+        catch(err) {
+            console.log("Err-SignUp-1", err)
+            res.send({signInStatus : 'failed', statusmessage : err.message})
+        }
     }
 })
 
 
 app.post('/VerifyEmail', async(req,res)=>{
     const userInfo = req.body; 
-    const user = firebase.auth().currentUser
     let userData, userID;
-    const getUser = await database.collection('Users').where("Email", "==", userInfo.email).get()
-        .then(async (snapshot)=>{
-            snapshot.forEach((doc)=>{
-                userData = doc.data()
-                userID = doc.id
+    try {
+        const getUser = await database.collection('Users').where("Email", "==", userInfo.email).get()
+        getUser.forEach((doc)=>{
+            userData = doc.data()
+            userID = doc.id
+        })
+
+        if (userData.EmailVerified !== true){
+            await database.collection('Users').doc(userID).update({
+                EmailVerified : true
             })
-            if (userData.EmailVerified !== true){
-                await user.updateProfile({
-                    emailVerified : true
-                })
-                .then(async()=>{
-                    await database.collection('Users').doc(userID).update({
-                        EmailVerified : true
-                    })
-                    .then(()=>{
-                        res.send({status : 200, statusmessage : "success"})
-                    })
-                    .catch((err)=>{
-                        res.send({status : err.code, statusmessage : err.message})
-                    })
-                })
-                .catch((err)=>{
-                    res.send({status : err.code, statusmessage : err.message})
-                })
-            } else {
-                res.send({status : 401 , statusmessage : "Email Verfieid Already"})
-            }
+                res.send({status : 200, statusmessage : "success"})
+        } else {
+            res.send({status : 401 , statusmessage : "Email Verfieid Already"})
+        }
+    }
+    catch(err){
+        console.log(err.message)
+        res.send({status : 400, statusmessage : err.message, errorMessage : "Bad Request"})
+    }
+})
+
+//update user's profile.
+app.post('/updateProfile', async (req, res)=>{
+    const userData = req.body
+    try{
+        await database.collection('Users').doc(userData.userID).update({
+            Name : userData.Name, 
+            Email : userData.Email,
+            Address : userData.Address,
+            PhoneNumber : userData.Phone
         })
-        .catch((err)=>{
-            res.send({status : 400, statusmessage : err.message, errorMessage : "Bad Request"})
-        })
+        res.send({status : 200, statusmessage : "Success"})
+    }
+    catch(err){
+        res.send({status : 400, statusmessage : err.message , errorMessage : "Bad Request"})
+    }
+})
+
+
+app.post('/deleteUser', async(req, res)=>{
+    const userData = req.body
+    try { 
+        await database.collection('Users').doc(userData.userID).delete()
+        res.send({status : 200, statusmessage : "Profile Deleted"})
+    }
+    catch(err){
+        res.send({status : 200, statusmessage : err.message})
+    }
 })
 
 
 //function that runs on click LOGOUT button
-app.post('/logout', function(req , res){
-    firebase.auth().signOut()
-    .then(()=>{
-        res.send({LoggedOut : true, status : 200, statusmessage : "Success"})
-    })
-    .catch(err=>{
+app.post('/logout', async (req , res)=>{
+    try {
+        await firebase.auth().signOut()
+        res.send({LoggedOut : true, status : 200, statusmessage : "Success"})    
+    }
+    catch(err){
         res.send({LoggedOut : false, status : 400, statusmessage : "Bad Request", errorText : err})
-    })
+    }
 })
 
 
 //to get the current user Data 
-app.post('/getCurrentUserData', async function(req, res){
-    const currentUserData = await firebase.auth().currentUser     //get current user details 
+app.post('/getCurrentUserData', async(req, res)=>{
+    const currentUserEmail = req.body.currentUserEmail
+    const currentUserData = await admin.auth().getUserByEmail(currentUserEmail);     //get current user details 
     let userData , userID;   //initialize a varaible
-    if (currentUserData){
-        const user = await database.collection('Users').where("Email", "==", currentUserData.email).get()   //get from collection USERS using email
-                .then((snapshot)=>{
-                    if(snapshot){
-                        snapshot.forEach((doc)=>{
-                            userData = doc.data()
-                            userID = doc.id
-                        })
-                        if (userData){
-                            res.send({UserEmail : currentUserData.email, userData : userData, userID : userID})  //if data is gotten
-                        }else{
-                            res.send({UserEmail : currentUserData.email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
-                        }                        
-                    }else {
-                        console.log("No matching documents")    //data is not gotten
-                        res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
-                    }
+    if (currentUserEmail !== undefined){
+        try {
+            if (currentUserData){
+                const user = await database.collection('Users').where("Email", "==", currentUserEmail).get()   //get from collection USERS using email
+                user.forEach((doc)=>{
+                    userData = doc.data()
+                    userID = doc.id
                 })
-                .catch((err)=>{ console.log(err) })     //catch errors
-    }else {
-        res.send({UserEmail : null})
+                if (userData){
+                    res.send({UserEmail : currentUserData.email, userData : userData, userID : userID})  //if data is gotten
+                }else{
+                    res.send({UserEmail : currentUserData.email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
+                }                        
+            } else {
+                console.log("No matching documents", "---/getCurrentUserData")    //data is not gotten
+                res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
+            }
+        console.log("Current User Email", currentUserData.email, "---/getCurrentUserData")
+        }
+        catch(err){
+            console.log(err.message)
+            res.send({UserEmail : null})
+        }
+    } else {
+        console.log("No User Logged in --- /getCurrentUserData")
     }
-    console.log("Current User EMail", currentUserData.email)
 })
 
 
 app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
-    const currentUserData = firebase.auth().currentUser;
-    let createdClubIds = [];
-    let createdClubData = []
-    let joinedClubs = [];
-    if (currentUserData){
-        const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserData.email).get()
-        .then(async(snapshot)=>{
-            snapshot.forEach((doc)=>{
-                createdClubIds.push(doc.id)
-                createdClubData.push(doc.data())
-                console.log("CLUBS CREATED", "Gotten all clubs")
-            })
-
-            const getClubsJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserData.email).get()            
-            .then(snapshot => {
-                snapshot.forEach((doc)=>{
+    const currentUserEmail = req.body.currentUserEmail;
+    const isUserPresentQuery = await admin.auth().getUserByEmail(currentUserEmail);
+    let createdClubIds = [] , createdClubData = [],  joinedClubs = [];
+    if (currentUserEmail !== undefined){
+        try {
+            if (isUserPresentQuery){
+                const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserEmail).get()
+                clubs.forEach((doc)=>{
+                    createdClubIds.push(doc.id)
+                    createdClubData.push(doc.data())
+                    console.log("CLUBS CREATED", "Gotten all clubs")
+                })
+    
+                const getClubsJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserEmail).get()  
+                getClubsJoinedofCurrentUser.forEach((doc)=>{
                     joinedClubs.push(doc.data().ClubsJoined)
                     console.log("CLUBS JOINED", doc.data().ClubsJoined)
                 })
-                res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})
-            })
-            .catch((err)=>{
-                res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : [[]]})
-            })
-        })
-        .catch((err)=>{
-            res.send({status : 400, statusmessage : "Bad Request II", clubID : [], clubs : [], clubsjoined : [[]]})
-        })    
+                res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
+            }
+        }
+        catch(err){
+            res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : [[]]})
+        }
     }
 })
 
 
 //this function runs on click of the button Create Club
-app.post('/CreateClub', async function(req, res){ 
+app.post('/CreateClub', async (req, res) => { 
     const clubData = req.body;      //get request body
-    if (clubData){ 
-        const user = firebase.auth().currentUser        //get current User details
-        if (user){
-            const doesClubExist = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()  //get data from Clubs using the given clubname
-            if (doesClubExist.empty === false){     //if the return value is not empty
-                res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
-            } else {
-                //set database if club does not already exist
-                database.collection('Clubs').doc().set({
-                    ClubName : clubData.clubName, 
-                    ClubType : clubData.clubType, 
-                    AdminEmail : clubData.email, 
-                    MemberLimit : clubData.memberLimit, 
-                    Members : [],
-                    Invites : []
-                })
-                .then((resp)=>{
-                    console.log("Create Club Response", resp)
+    try {
+        if (clubData){ 
+            const user = await admin.auth().getUserByEmail(clubData.email)      //get current User details
+            if (user){
+                const doesClubExistQuery = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()  //get data from Clubs using the given clubname
+                if (doesClubExistQuery.empty === false){     //if the return value is not empty
+                    res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
+                } else {
+                    //set database if club does not already exist
+                    database.collection('Clubs').doc().set({
+                        ClubName : clubData.clubName, 
+                        ClubType : clubData.clubType, 
+                        AdminEmail : clubData.email, 
+                        MemberLimit : clubData.memberLimit, 
+                        Members : [],
+                        Invites : []
+                    })
                     res.send({status : 200, statusmessage : "Club Created"})
-                })
-                .catch((err)=>{
-                    console.log("Create Club Error", err)
-                    res.send({status : 400, statusmessage : "Bad Request", errorMessage : err})
-                })
                 }
-        } else {
-            res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "No user is logged in"})   //if user is not present 
+            }
         }
-    } else {
-        res.send({status : 400, statusmessage : "Bad Request", errorMessage : "No data in request body"})   //if data is not gotten from the request body
+    }
+    catch(err){
+        res.send({status : 400, statusmessage : "Bad Request", errorMessage : err.message})   //if data is not gotten from the request body
     }
 })
 
 app.post('/EditClub', async (req, res)=>{
     const clubInfo = req.body;
-    const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-    .then((club)=>{
-        res.send({status : 200, statusmessage : "success", clubdata : club.data()})
-    })
-    .catch((err)=>{
+    let clubdata;
+    try {
+        const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+        clubdata = club.data()
+        res.send({status : 200, statusmessage : "success", clubdata})
+    }
+    catch(err){
         res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
-    })
+    }
 })
 
 app.post('/UpdateClub', async (req,res)=>{
     const clubInfo = req.body; 
-    const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
-        ClubName : clubInfo.clubname, 
-        ClubType : clubInfo.clubtype, 
-        MemberLimit : clubInfo.membersLimit
-    })
-    .then((data)=> {
+    try {
+        const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
+            ClubName : clubInfo.clubname, 
+            ClubType : clubInfo.clubtype, 
+            MemberLimit : clubInfo.membersLimit
+        })
         res.send({status : 200, statusmessage : "success"})
-    })
-    .catch(err=>{
+    }
+    catch(err){
         res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
-    })
+    }
 })
 
 app.post('/leaveClub', async (req, res)=>{
     const clubInfo = req.body;
     let clubsjoined, userID, clubMembers, clubInvites, clubbID;
-    const user = await firebase.auth().currentUser;
-    const getUserData = await database.collection('Users').where("Email", "==", user.email).get()
-    .then((snapshot)=>{
-        snapshot.forEach((doc)=>{
+    try {
+        const getUserData = await database.collection('Users').where("Email", "==", clubInfo.currentUserEmail).get()
+        getUserData.forEach((doc)=>{
             clubsjoined = doc.data().ClubsJoined;
             userID = doc.id;
         })
-    })
-    var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
-    clubsjoined.splice(clubID, 1);
-    await database.collection('Users').doc(userID).update({
-        ClubsJoined : clubsjoined
-    })
-        .then(async()=>{
-            const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-            .then((snapshot)=>{
-                snapshot.forEach((doc)=>{
-                    clubMembers = doc.data().Members;
-                    clubInvites = doc.data().Invites;
-                    clubbID = doc.id;
-                })
-            })
+
+        var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
+        clubsjoined.splice(clubID, 1);
+        await database.collection('Users').doc(userID).update({
+            ClubsJoined : clubsjoined
         })
-        const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === user.email)
-        const getUserIDInClubInvitesArr = clubInvites.findIndex(member => member.email === user.email)
+
+         const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+         getClub.forEach((doc)=>{
+            clubMembers = doc.data().Members;
+            clubInvites = doc.data().Invites;
+            clubbID = doc.id;
+        })
+
+        const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === clubInfo.currentUserEmail)
+        const getUserIDInClubInvitesArr = clubInvites.findIndex(member => member.email === clubInfo.currentUserEmail)
 
         clubMembers.splice(getUserIDInClubMembersArr, 1);
         clubInvites.splice(getUserIDInClubInvitesArr, 1);
@@ -327,13 +338,11 @@ app.post('/leaveClub', async (req, res)=>{
             Members : clubMembers,
             Invites : clubInvites
         })
-        .then(()=>{
-            res.send({status : 200, statusmessage : "success"})
-        })
-        .catch((err)=>{
-            res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})
-        })
-
+        res.send({status : 200, statusmessage : "success"})
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})        
+    }
 })
 
 app.post('/joinClub', async(req, res)=>{
@@ -342,44 +351,45 @@ app.post('/joinClub', async(req, res)=>{
     console.log(clubInfo)
     let clubID, clubMembers, clubMemberLimit, userClubsJoined, userID, userData, clubInvites;  
     const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
-    const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
-    const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-    //check if the invited email has an account
-    if (getUser.docs.length > 0){ 
-        //check if the club exists
-        if (getClub.empty === true){
-            console.log("Club does not exist")
-            res.send({status : 401 , statusmessage : "Club does not exist"})
-        } else {
-            //get members of the club
-            getClub.forEach((snapshot)=>{
-                console.log(snapshot.data().Members)
-                clubMembers = snapshot.data().Members;
-                clubInvites = snapshot.data().Invites;
-                clubMemberLimit = snapshot.data().MemberLimit
-                clubID = snapshot.id
-            })
-            //check if the user is alredy a member of the club. 
-            var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
-            if (checkIfUserEmailExistsInClubMemberArr.length > 0){
-                console.log("You already belong to this club")
-                res.send({status : 401 , statusmessage : "You already belong to this club"})
+    try {
+        const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
+        const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+
+        if (getUser.docs.length > 0){ 
+            //check if the club exists
+            if (getClub.empty === true){
+                console.log("Club does not exist")
+                res.send({status : 401 , statusmessage : "Club does not exist"})
             } else {
-                //check if the member limit is reached
-                if (clubMembers.length < clubMemberLimit){      //if limit is not reached
-                    getUser.forEach(snapshot=>{
-                        userID = snapshot.id;   //get user id 
-                        userData = snapshot.data()  //get all userData
-                        console.log("SNAP USER", snapshot.data())
-                        console.log("SNAPSHOT", snapshot.data())
-                    })
-                    console.log("USER DATA" , userData)
-                    userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
-                    userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
-                    database.collection('Users').doc(userID).update({
-                        ClubsJoined : userClubsJoined       //update array
-                    })
-                    .then(()=> {
+                //get members of the club
+                getClub.forEach((snapshot)=>{
+                    console.log(snapshot.data().Members)
+                    clubMembers = snapshot.data().Members;
+                    clubInvites = snapshot.data().Invites;
+                    clubMemberLimit = snapshot.data().MemberLimit
+                    clubID = snapshot.id
+                })
+                //check if the user is alredy a member of the club. 
+                var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
+                if (checkIfUserEmailExistsInClubMemberArr.length > 0){
+                    console.log("You already belong to this club")
+                    res.send({status : 401 , statusmessage : "You already belong to this club"})
+                } else {
+                    //check if the member limit is reached
+                    if (clubMembers.length < clubMemberLimit){      //if limit is not reached
+                        getUser.forEach(snapshot=>{
+                            userID = snapshot.id;   //get user id 
+                            userData = snapshot.data()  //get all userData
+                            console.log("SNAP USER", snapshot.data())
+                            console.log("SNAPSHOT", snapshot.data())
+                        })
+                        console.log("USER DATA" , userData)
+                        userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
+                        userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
+                        database.collection('Users').doc(userID).update({
+                            ClubsJoined : userClubsJoined       //update array
+                        })
+
                         //if update is successful
                         const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
                         clubMembers.push(newMember);    //append into the array clubMembers
@@ -390,41 +400,34 @@ app.post('/joinClub', async(req, res)=>{
                             Members : clubMembers,
                             Invites : clubInvites
                         })
-                        .then(()=> {
-                            res.send({status : 200 , statusmessage : "You have joined this club!"});
-                        })
-                        .catch((err)=>{
-                            console.log(err)
-                            res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
-                        })
-                    })
-                    .catch((err)=>{
-                        console.log(err)
-                        res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
-                    })
-                } else {
-                    console.log("Club Limit Reached. You can't join this club")
-                    res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
+                        res.send({status : 200 , statusmessage : "You have joined this club!"});
+                    } else {
+                        console.log("Club Limit Reached. You can't join this club")
+                        res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
+                    }
                 }
             }
+        } else {
+            res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
+            console.log('User does not have an account with club membership')
         }
-    }else {
-        res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
-        console.log('User does not have an account with club membership')
+    }
+    catch(err){
+        res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
     }
 })
 
 app.post('/deleteClub', async (req, res)=>{
     const clubInfo = req.body;
     console.log(clubInfo);
-    const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-    const clubMembers = club.data().Members
-    if (clubMembers.length > 0){
-        clubMembers.forEach( async (member)=>{
-            var memberMail = member.email;
-            var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
-            .then(async (snapshot)=>{
-                snapshot.forEach( async (doc)=>{
+    try {
+        const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+        const clubMembers = club.data().Members
+        if (clubMembers.length > 0){
+            clubMembers.forEach(async(member)=>{
+                var memberMail = member.email;
+                var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
+                getUsersWithMail.forEach(async(doc)=>{
                     var clubsjoined = doc.data().ClubsJoined    //clubs joined of each member 
                     var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName)     //get the index of this club
                     clubsjoined.splice(getClubIndex,1)
@@ -432,93 +435,63 @@ app.post('/deleteClub', async (req, res)=>{
                         ClubsJoined : clubsjoined
                     })
                 })
-                await database.collection('Clubs').doc(clubInfo.clubID).delete()
-                .then(()=>{
-                    res.send({status : 200, statusmessage : "Club Deleted"})
-                })
-                .catch(err => {
-                    res.send({status : err.code, statusmessage : err.message})
-                })
             })
-            .catch((err)=>{
-                console.log(err)
-                res.send({status : err.code, statusmessage : err.message})
-            })
-        })
-    }else {
-        await database.collection('Clubs').doc(clubInfo.clubID).delete()
-        .then(()=>{
+            await database.collection('Clubs').doc(clubInfo.clubID).delete()
             res.send({status : 200, statusmessage : "Club Deleted"})
-        })
-        .catch(err => {
-            res.send({status : err.code, statusmessage : err.message})
-        })
+        }else {
+            await database.collection('Clubs').doc(clubInfo.clubID).delete()
+            res.send({status : 200, statusmessage : "Club Deleted"})
+        }
     }
-
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message})
+    }
     console.log(club.data().Members)
 })
 
 app.post('/getClubMembers', async (req, res)=>{
     const clubInfo = req.body; 
     let members;
-    const clubMembers = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-    .then((snapshot)=>{
-        snapshot.forEach((doc)=>{
+    try {
+        const clubMembers = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+        clubMembers.forEach((doc)=>{
             console.log(doc.data().Members)
             members = doc.data().Members;
         })
         res.send({status : 200, statusmessage : "success", clubMembers : members})
-    })
-    .catch((err)=>{
+    }
+    catch(err){
         console.log(err)
         res.send({status : 400, statusmessage : err.message, errorMessage : "Bad Request"})
-    })
-})
-
-app.post('/updateProfile', async (req, res)=>{
-    const userData = req.body
-    await database.collection('Users').doc(userData.userID).update({
-        Name : userData.Name, 
-        Email : userData.Email,
-        Address : userData.Address,
-        PhoneNumber : userData.Phone
-    })
-    .then(()=>{
-        res.send({status : 200, statusmessage : "Success"})
-    })
-    .catch((err)=>{
-        res.send({status : 400, statusmessage : err.message , errorMessage : "Bad Request"})
-    })
+    }
 })
 
 
 app.post('/InviteMembers', async (req, res)=>{
     var invites = req.body 
     const newInvite = {"email": invites.email, "accepted": false}
-    const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get()
-    const clubInvites = await getClubWithDocID.data().Invites
-    const clubMemberLimit = await getClubWithDocID.data().MemberLimit
-    const clubMembers = await getClubWithDocID.data().Members
-    var clubMembersLength = clubMembers.length
+    try {
+        const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get()
+        const clubInvites = getClubWithDocID.data().Invites
+        const clubMemberLimit = getClubWithDocID.data().MemberLimit
+        const clubMembers = getClubWithDocID.data().Members
+        var clubMembersLength = clubMembers.length
 
-    if (clubMembersLength < clubMemberLimit){
-        clubInvites.push(newInvite)
-        console.log ("Invites", clubInvites)
-        await database.collection('Clubs').doc(invites.clubID).update({
-            Invites : clubInvites
-        })
-        .then((data)=>{
-            console.log("Update Status", data)
+        if (clubMembersLength < clubMemberLimit){
+            clubInvites.push(newInvite)
+            console.log ("Invites", clubInvites)
+            await database.collection('Clubs').doc(invites.clubID).update({
+                Invites : clubInvites
+            })
             res.send({status : 200, statusmessage : "Success"})
-        })
-        .catch((err)=>{
-            console.log("Update Error", err)
-            res.send({status : err.coode, statusmessage : err.message, errorMessage : "Bad Request : 400"})
-        })
-    } else {
-        res.send({status : 401, statusmessage : "Members Limit reached", errorMessage : "Unauthorized request"})
+        } else {
+            res.send({status : 400, statusmessage : "Members Limit Reached"})
+        }
+    }
+    catch(err){
+        console.log(err)
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request : 400"})
     }
 })
-
 
 // module.exports = app
