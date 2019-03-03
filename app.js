@@ -1,5 +1,6 @@
 var express = require('express');
 var uuidv4 = require('uuid/v4'); //for generating unique IDs for users
+var validator = require('validator')
 var admin = require("firebase-admin");
 var firebase = require('firebase')
 var config = {
@@ -59,36 +60,52 @@ app.post('/', async function(req, res){   //onload of all the pages
     }
 })
 
-//function that runs on login
-app.post('/login', async(req, res)=>{  
-    let verifiedEmail, currentUserData;
-    const userData = req.body
-        try {
-            const signInQuery = await firebase.auth().signInWithEmailAndPassword(userData.email, userData.password);
-            const user = await database.collection('Users').where('Email','==',userData.email).get()
-            user.forEach((doc)=>{
-                        verifiedEmail = doc.data().EmailVerified;
-                        currentUserData = doc.data()
-                    })        
-            if (verifiedEmail === true){
-                console.log("User Sign In Successful")
-                res.send({status : 200 ,LoggedIn : true, statusText : "Succesful Login", userDetails : currentUserData})
-            } else {
-                console.log("User Login Successful but email is not verified")
-                res.send({status : 200 ,LoggedIn : false, statusmessage : "Verify your email to login", userDetails : currentUserData})
-            }
-        }
-        catch(err) {
-            console.log("Error", err)
-            res.send({status : 400, statusmessage : err.message, LoggedIn : false})
-        }
-    })
 
 //function that runs on signUp
 app.post('/signup', async (req, res)=>{   
     const data = req.body
+    const isEmail = validator.isEmail(data.email)
     const UserUUID = uuidv4();
     console.log(UserUUID);
+    //check if the email data sent is an actual email
+    if (isEmail === true){
+        //check if a user with the email exists
+        var checkIfUserExists = await database.collection('Users').where("Email", "==", data.email).get()
+        console.log(checkIfUserExists.empty)
+        if (checkIfUserExists.empty === true){
+            admin.auth().createUser({
+                email : data.email, 
+                password : data.password
+            })
+            .then(()=>{
+                database.collection('Users').doc().set({
+                    Name : data.name, 
+                    Email : data.email, 
+                    EmailVerified : false, 
+                    PhoneNumber : data.phone, 
+                    Address : data.address, 
+                    Password : data.password, 
+                    ClubsJoined : [], 
+                    UserID : UserUUID
+                })
+                console.log("User sign in successful"); 
+                res.send({signInStatus : 'success'});
+            })
+            .catch(err=>{
+                console.log("/signup ---", err.message)
+            })
+        } else {
+            res.send({status : 401, statusmessage : "A User with this Email already exists. Please use another email to register."})
+        }
+    } else {
+        res.send({status : 400, statusmessage : "Email not in the right format"})
+    }
+    // if (checkIfUserExists.exists === true){
+    //     res.send({status : 400 , statusmessage : "User with this email exists", errorMessage : "Bad Request"})
+    // } else {
+
+    // }
+
     if (data){
         try{
             admin.auth().createUser({
@@ -125,8 +142,8 @@ app.post('/VerifyEmail', async(req,res)=>{
     const userInfo = req.body; 
     let userData, userID;
     try {
-        const getUser = await database.collection('Users').where("Email", "==", userInfo.email).get()
-        getUser.forEach((doc)=>{
+        const getUserByID = await database.collection('Users').where("UserID", "==", userInfo.UserID).get()
+        getUserByID.forEach((doc)=>{
             userData = doc.data()
             userID = doc.id
         })
@@ -136,6 +153,7 @@ app.post('/VerifyEmail', async(req,res)=>{
                 EmailVerified : true
             })
                 res.send({status : 200, statusmessage : "success"})
+                console.log("Email Verified Successfully")
         } else {
             res.send({status : 401 , statusmessage : "Email Verfieid Already"})
         }
@@ -176,20 +194,9 @@ app.post('/deleteUser', async(req, res)=>{
 })
 
 
-//function that runs on click LOGOUT button
-app.post('/logout', async (req , res)=>{
-    try {
-        await firebase.auth().signOut()
-        res.send({LoggedOut : true, status : 200, statusmessage : "Success"})    
-    }
-    catch(err){
-        res.send({LoggedOut : false, status : 400, statusmessage : "Bad Request", errorText : err})
-    }
-})
-
-
 //to get the current user Data 
 app.post('/getCurrentUserData', async(req, res)=>{
+    
     const currentUserEmail = req.body.currentUserEmail
     const currentUserData = await admin.auth().getUserByEmail(currentUserEmail);     //get current user details 
     let userData , userID;   //initialize a varaible
@@ -254,6 +261,7 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
 //this function runs on click of the button Create Club
 app.post('/CreateClub', async (req, res) => { 
     const clubData = req.body;      //get request body
+    const clubID = uuidv4();
     try {
         if (clubData){ 
             const user = await admin.auth().getUserByEmail(clubData.email)      //get current User details
@@ -269,7 +277,8 @@ app.post('/CreateClub', async (req, res) => {
                         AdminEmail : clubData.email, 
                         MemberLimit : clubData.memberLimit, 
                         Members : [],
-                        Invites : []
+                        Invites : [], 
+                        ClubID : clubID
                     })
                     res.send({status : 200, statusmessage : "Club Created"})
                 }
