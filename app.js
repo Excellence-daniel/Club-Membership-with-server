@@ -64,76 +64,47 @@ app.post('/', async function(req, res){   //onload of all the pages
 //function that runs on signUp
 app.post('/signup', async (req, res)=>{   
     const data = req.body
+    var numbers = /\d+/;
+    var specialchars = /[ !@#$%^&*()`_+\-=\[\]{};':"\\|,.<>\/?]/; 
     const isEmail = validator.isEmail(data.email)
     const UserUUID = uuidv4();
     console.log(UserUUID);
     //check if the email data sent is an actual email
-    if (isEmail === true){
-        //check if a user with the email exists
-        var checkIfUserExists = await database.collection('Users').where("Email", "==", data.email).get()
-        console.log(checkIfUserExists.empty)
-        if (checkIfUserExists.empty === true){
-            admin.auth().createUser({
-                email : data.email, 
-                password : data.password
-            })
-            .then(()=>{
-                database.collection('Users').doc().set({
-                    Name : data.name, 
-                    Email : data.email, 
-                    EmailVerified : false, 
-                    PhoneNumber : data.phone, 
-                    Address : data.address, 
-                    Password : data.password, 
-                    ClubsJoined : [], 
-                    UserID : UserUUID
+    if (data.password.length > 9 && numbers.test(data.password) === true && specialchars.test(data.password) === true){
+        if (isEmail === true){
+            //check if a user with the email exists
+            var checkIfUserExists = await database.collection('Users').where("Email", "==", data.email).get()
+            console.log(checkIfUserExists.empty)
+            if (checkIfUserExists.empty === true){
+                admin.auth().createUser({
+                    email : data.email, 
+                    password : data.password
                 })
-                console.log("User sign in successful"); 
-                res.send({signInStatus : 'success'});
-            })
-            .catch(err=>{
-                console.log("/signup ---", err.message)
-            })
+                .then(()=>{
+                    database.collection('Users').doc().set({
+                        Name : data.name, 
+                        Email : data.email, 
+                        EmailVerified : false, 
+                        PhoneNumber : data.phone, 
+                        Address : data.address, 
+                        Password : data.password, 
+                        ClubsJoined : [], 
+                        UserID : UserUUID
+                    })
+                    console.log("User sign in successful"); 
+                    res.send({signInStatus : 'success'});
+                })
+                .catch(err=>{
+                    console.log("/signup ---", err.message)
+                })
+            } else {
+                res.send({status : 401, statusmessage : "A User with this Email already exists. Please use another email to register."})
+            }
         } else {
-            res.send({status : 401, statusmessage : "A User with this Email already exists. Please use another email to register."})
+            res.send({status : 400, statusmessage : "Email not in the right format"})
         }
     } else {
-        res.send({status : 400, statusmessage : "Email not in the right format"})
-    }
-    // if (checkIfUserExists.exists === true){
-    //     res.send({status : 400 , statusmessage : "User with this email exists", errorMessage : "Bad Request"})
-    // } else {
-
-    // }
-
-    if (data){
-        try{
-            admin.auth().createUser({
-                email : data.email, 
-                password : data.password
-            })
-            .then(async()=>{
-                await database.collection('Users').doc().set({
-                    Name : data.name, 
-                    Email : data.email, 
-                    EmailVerified : false, 
-                    PhoneNumber : data.phone, 
-                    Address : data.address, 
-                    Password : data.password, 
-                    ClubsJoined : [], 
-                    UserID : UserUUID
-                })
-                console.log("User sign in successful"); 
-                res.send({signInStatus : 'success'});
-            })
-            .catch(err=>{
-                console.log("/signup ---", err.message)
-            })
-        } 
-        catch(err) {
-            console.log("Err-SignUp-1", err)
-            res.send({signInStatus : 'failed', statusmessage : err.message})
-        }
+        res.send({status : 400 , statusmessage : "Password is not strong.!"})
     }
 })
 
@@ -196,36 +167,50 @@ app.post('/deleteUser', async(req, res)=>{
 
 //to get the current user Data 
 app.post('/getCurrentUserData', async(req, res)=>{
-    
-    const currentUserEmail = req.body.currentUserEmail
-    const currentUserData = await admin.auth().getUserByEmail(currentUserEmail);     //get current user details 
-    let userData , userID;   //initialize a varaible
-    if (currentUserEmail !== undefined){
-        try {
-            if (currentUserData){
-                const user = await database.collection('Users').where("Email", "==", currentUserEmail).get()   //get from collection USERS using email
-                user.forEach((doc)=>{
-                    userData = doc.data()
-                    userID = doc.id
+    let userData , userID;   //initialize varaibles
+    const data = req.body
+    const IdToken = data.IdToken
+    console.log("IdToken", IdToken)
+    admin.auth().verifyIdToken(IdToken)
+    .then(function(decodedToken) {
+        var email = decodedToken.email;
+        if (email){
+            try {
+                database.collection('Users').where("Email", "==", email).get()   //get from collection USERS using email
+                .then((snapshot)=>{
+                    snapshot.forEach((doc)=>{
+                        console.log("data",doc, doc.data())
+                        userData = doc.data()
+                        userID = doc.id
+                    })
+
+                    if (userData){
+                        res.send({UserEmail : email, userData : userData, userID : userID})  //if data is gotten
+                    }else{
+                        res.send({UserEmail : email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
+                    } 
                 })
-                if (userData){
-                    res.send({UserEmail : currentUserData.email, userData : userData, userID : userID})  //if data is gotten
-                }else{
-                    res.send({UserEmail : currentUserData.email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
-                }                        
-            } else {
-                console.log("No matching documents", "---/getCurrentUserData")    //data is not gotten
-                res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
+                console.log("Current User Email", email, "---/getCurrentUserData")
             }
-        console.log("Current User Email", currentUserData.email, "---/getCurrentUserData")
+            catch(err){
+                console.log(err.message)
+                res.send({UserEmail : null})
+            }
+        } else {
+            console.log("No User Logged in --- /getCurrentUserData")
+            res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
         }
-        catch(err){
-            console.log(err.message)
-            res.send({UserEmail : null})
-        }
-    } else {
-        console.log("No User Logged in --- /getCurrentUserData")
-    }
+        console.log(decodedToken, "Decoded Token")
+        // ...
+    }).catch(function(error) {
+        // Handle error
+        console.log(error)
+    });
+    // const currentUserEmail = data.currentUserEmail
+    // const currentUserData = await admin.auth().getUserByEmail(currentUserEmail);     //get current user details 
+    
+    // if (currentUserEmail !== undefined){
+       
 })
 
 
@@ -257,6 +242,22 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
     }
 })
 
+app.post('/getClubByClubID', (req, res)=>{
+    const clubID = req.body.clubID
+    let clubData, dClubID;
+    database.collection('Clubs').where("ClubID", "==", clubID).get()
+    .then((snapshot)=>{
+        snapshot.forEach((doc)=>{
+            clubData = doc.data()
+            dClubID = doc.id
+        })
+        res.send({status : 200, ClubData : clubData, ClubID : dClubID})
+    })
+    .catch(err=>{
+        res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message})
+    })
+
+})
 
 //this function runs on click of the button Create Club
 app.post('/CreateClub', async (req, res) => { 
