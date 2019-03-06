@@ -1,15 +1,15 @@
 var express = require('express');
 var uuidv4 = require('uuid/v4'); //for generating unique IDs for users
-var validator = require('validator')
+var validator = require('validator');
 var admin = require("firebase-admin");
-var firebase = require('firebase')
+var firebase = require('firebase');
 var config = {
     apiKey: "AIzaSyBmlRfFT3kXI2PrhP345AYsQFdeAYJL0po",
     authDomain: "club-membership-app.firebaseapp.com",
     databaseURL: "https://club-membership-app.firebaseio.com",
     projectId: "club-membership-app",
   };
-firebase.initializeApp(config)
+firebase.initializeApp(config); 
 
 var serviceAccount = require("./club-membership-app-firebase-adminsdk-o25at-a9186c469e.json");
 
@@ -17,31 +17,51 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://club-membership-app.firebaseio.com"
 });
-var database = admin.firestore()
-var cors = require('cors')
+var database = admin.firestore();
+var cors = require('cors');
 var app = express();
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 app.use(express.urlencoded({
     extended: true
 }))
-app.use(express.json())
-app.use(cors())
-const port = 2000
+app.use(express.json());
+app.use(cors());
+const port = 2000;
 
 app.listen(port, function () {
-    console.log("Working on port 2000") //gets the server working     
+    console.log("Working on port 2000"); //gets the server working     
+})
+
+app.use(function(req, res, next){
+    console.log("I am here");
+    const IdToken = req.body.IdToken;
+    try{
+        admin.auth().verifyIdToken(IdToken)
+        .then((decodedToken) => {
+            console.log("Hey", decodedToken);
+            next();
+        })
+        .catch((err) => {
+            console.log("Hey", err);
+            res.send({status : 400, statusmessage : 'User not found!'});
+        })
+    }
+    catch(error){
+        console.log("hi", error);
+        res.send({status : 400, statusmessage : 'User not found!'});
+    }
 })
 
 app.post('/', async function(req, res){   //onload of all the pages 
     const userData = req.body;
     let verifiedEmail;
     if (userData.currentUserEmail !== undefined){
-        const currUser = await admin.auth().getUserByEmail(userData.currentUserEmail)
+        const currUser = await admin.auth().getUserByEmail(userData.currentUserEmail);
         if (currUser){
             try {
                 const getUser =  await database.collection('Users').where('Email', '==', userData.currentUserEmail).get()
                 getUser.forEach((doc)=>{
-                    verifiedEmail = doc.data().EmailVerified
+                    verifiedEmail = doc.data().EmailVerified;
                 })
                 if (verifiedEmail === true){
                     res.send({status : 200, UserPresent : true}) 
@@ -170,7 +190,7 @@ app.post('/getCurrentUserData', async(req, res)=>{
     let userData , userID;   //initialize varaibles
     const data = req.body
     const IdToken = data.IdToken
-    console.log("IdToken", IdToken)
+    // console.log("IdToken", IdToken)
     admin.auth().verifyIdToken(IdToken)
     .then(function(decodedToken) {
         var email = decodedToken.email;
@@ -218,11 +238,11 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
     const currentUserEmail = req.body.currentUserEmail;
     const isUserPresentQuery = await admin.auth().getUserByEmail(currentUserEmail);
     let createdClubIds = [] , createdClubData = [],  joinedClubs = [];
-    if (currentUserEmail !== undefined){
+    if (currentUserEmail !== undefined) {
         try {
             if (isUserPresentQuery){
                 const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserEmail).get()
-                clubs.forEach((doc)=>{
+                clubs.forEach((doc) => {
                     createdClubIds.push(doc.id)
                     createdClubData.push(doc.data())
                     console.log("CLUBS CREATED", "Gotten all clubs")
@@ -237,7 +257,7 @@ app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
             }
         }
         catch(err){
-            res.send({status : 400, statusmessage : "Bad Request I", clubID : [], clubs : [], clubsjoined : [[]]})
+            res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
         }
     }
 })
