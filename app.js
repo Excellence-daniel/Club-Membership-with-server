@@ -102,36 +102,36 @@ app.post('/VerifyEmail', async(req,res)=>{
 })
 
 
-app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
-    const currentUserUID = req.body.currentUserUID;
-    let userEmail;
-    let createdClubIds = []; 
-    let createdClubData = [];  
-    let joinedClubs = [];
-    const isUserPresentQuery = await database.collection('Users').where('UserID', '==', currentUserUID).get();
-    if (isUserPresentQuery.empty) {
-        res.send({status : 400, errorMessage : "Bad Request", statusmessage : "Invalid User"});
-    } else {
-        try {
-            isUserPresentQuery.forEach((doc) => {
-                userEmail = doc.data().Email;
-                joinedClubs.push(doc.data().ClubsJoined);
-                console.log("CLUBS JOINED", doc.data().ClubsJoined);
-            })
+// app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
+//     // const currentUserUID = req.body.currentUserUID;
+//     // let userEmail;
+//     // let createdClubIds = []; 
+//     // let createdClubData = [];  
+//     // let joinedClubs = [];
+//     // const isUserPresentQuery = await database.collection('Users').where('UserID', '==', currentUserUID).get();
+//     // if (isUserPresentQuery.empty) {
+//     //     res.send({status : 400, errorMessage : "Bad Request", statusmessage : "Invalid User"});
+//     // } else {
+//     //     try {
+//     //         isUserPresentQuery.forEach((doc) => {
+//     //             userEmail = doc.data().Email;
+//     //             joinedClubs.push(doc.data().ClubsJoined);
+//     //             console.log("CLUBS JOINED", doc.data().ClubsJoined);
+//     //         })
 
-            const clubs = await database.collection('Clubs').where("AdminEmail", "==", userEmail).get();
-            clubs.forEach((doc) => {
-                createdClubIds.push(doc.id);
-                createdClubData.push(doc.data());
-                console.log("CLUBS CREATED", "Gotten all clubs");
-            })
-            res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
-        }
-        catch(err){
-            res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
-        }
-    }
-})
+//     //         const clubs = await database.collection('Clubs').where("AdminEmail", "==", userEmail).get();
+//     //         clubs.forEach((doc) => {
+//     //             createdClubIds.push(doc.id);
+//     //             createdClubData.push(doc.data());
+//     //             console.log("CLUBS CREATED", "Gotten all clubs");
+//     //         })
+//     //         res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
+//     //     }
+//     //     catch(err){
+//     //         res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
+//     //     }
+//     // }
+// })
 
 app.post('/getClubByClubID', (req, res)=>{
     const clubID = req.body.clubID
@@ -149,38 +149,6 @@ app.post('/getClubByClubID', (req, res)=>{
     })
 
 })
-
-//this function runs on click of the button Create Club
-// app.post('/CreateClub', async (req, res) => { 
-//     const clubData = req.body;      //get request body
-//     const clubID = uuidv4();
-//     try {
-//         if (clubData){ 
-//             const user = await admin.auth().getUserByEmail(clubData.email)      //get current User details
-//             if (user){
-//                 const doesClubExistQuery = await database.collection('Clubs').where('ClubName','==',clubData.clubName).get()  //get data from Clubs using the given clubname
-//                 if (doesClubExistQuery.empty === false){     //if the return value is not empty
-//                     res.send({status : 401, statusmessage : "Unauthorized request", errorMessage : "Club already exists."}) 
-//                 } else {
-//                     //set database if club does not already exist
-//                     database.collection('Clubs').doc().set({
-//                         ClubName : clubData.clubName, 
-//                         ClubType : clubData.clubType, 
-//                         AdminEmail : clubData.email, 
-//                         MemberLimit : clubData.memberLimit, 
-//                         Members : [],
-//                         Invites : [], 
-//                         ClubID : clubID
-//                     })
-//                     res.send({status : 200, statusmessage : "Club Created"})
-//                 }
-//             }
-//         }
-//     }
-//     catch(err){
-//         res.send({status : 400, statusmessage : "Bad Request", errorMessage : err.message})   //if data is not gotten from the request body
-//     }
-// })
 
 app.post('/EditClub', async (req, res)=>{
     const clubInfo = req.body;
