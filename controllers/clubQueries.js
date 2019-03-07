@@ -56,26 +56,23 @@ exports.GetClubsDataOfCurrentUser = async function (req, res) {
     let createdClubIds = []; 
     let createdClubData = [];  
     let joinedClubs = [];
-    const isUserPresentQuery = await database.collection('Users').where('Email', '==', currentUserEmail).get();
-    if (isUserPresentQuery.empty) {
-        res.send({status : 400, errorMessage : "Bad Request", statusmessage : "Invalid User"});
-    } else {
-        try {
-            isUserPresentQuery.forEach((doc) => {
-                joinedClubs.push(doc.data().ClubsJoined);
-                console.log("CLUBS JOINED", doc.data().ClubsJoined);
-            })
+    console.log(currentUserEmail, "Email")
+    const isUserPresentQuery = await database.collection('Users').where('AdminEmail', '==', currentUserEmail).get();
+    try {
+        isUserPresentQuery.forEach((doc) => {
+            joinedClubs.push(doc.data().ClubsJoined);
+            console.log("CLUBS JOINED", doc.data().ClubsJoined);
+        })
 
-            const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserEmail).get();
-            clubs.forEach((doc) => {
-                createdClubIds.push(doc.id);
-                createdClubData.push(doc.data());
-                console.log("CLUBS CREATED", "Gotten all clubs");
-            })
-            res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
-        }
-        catch(err){
-            res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
-        }
+        const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserEmail).get();
+        clubs.forEach((doc) => {
+            createdClubIds.push(doc.id);
+            createdClubData.push(doc.data());
+            console.log("CLUBS CREATED", "Gotten all clubs");
+        })
+        res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
+    }
+    catch(err){
+        res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
     }
 }
