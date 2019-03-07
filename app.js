@@ -32,52 +32,42 @@ app.listen(port, function () {
     console.log("Working on port 2000"); //gets the server working     
 })
 
+//middleware 
 app.use(function(req, res, next){
-    console.log("I am here");
     const IdToken = req.body.IdToken;
     try{
         admin.auth().verifyIdToken(IdToken)
         .then((decodedToken) => {
-            console.log("Hey", decodedToken);
+            console.log('Middleware Check -- User Found')
             next();
         })
         .catch((err) => {
-            console.log("Hey", err);
+            console.log('HHey', err, 'User not found');
             res.send({status : 400, statusmessage : 'User not found!'});
         })
     }
     catch(error){
-        console.log("hi", error);
+        console.log('hhi', error);
         res.send({status : 400, statusmessage : 'User not found!'});
     }
 })
 
+
+
 app.post('/', async function(req, res){   //onload of all the pages 
-    const userData = req.body;
-    let verifiedEmail;
-    if (userData.currentUserEmail !== undefined){
-        const currUser = await admin.auth().getUserByEmail(userData.currentUserEmail);
-        if (currUser){
-            try {
-                const getUser =  await database.collection('Users').where('Email', '==', userData.currentUserEmail).get()
-                getUser.forEach((doc)=>{
-                    verifiedEmail = doc.data().EmailVerified;
-                })
-                if (verifiedEmail === true){
-                    res.send({status : 200, UserPresent : true}) 
-                } else {
-                    console.log("User Email not defined in post /")
-                    res.send({UserPresent : false, status : 401 , statusmessage :" User Email not Verified"}) 
-                }
-            }
-            catch(err){
-                console.log("hello err in post /", err)
-                res.send({status : 400, statusmessage : err.message, UserPresent : false })
-            }
-        }
-    } else {
-        console.log("No User Logged In")
-    }
+    const userID = req.body.userID;
+    console.log(userID)
+
+    const userQuery = database.collection('Users').doc(userID).get()
+    console.log(userQuery, "userQuery")
+    // if (userQuery.empty !== true) {
+        // res.send({status : 200, UserPresent : true}) 
+    //     console.log('User exists')
+    // } else {
+    //     res.send({status : 400, statusmessage : err.message, UserPresent : false })
+    //     console.log('User does not exist')
+    // }
+    console.log("USer query", userQuery.data())
 })
 
 
@@ -194,6 +184,7 @@ app.post('/getCurrentUserData', async(req, res)=>{
     admin.auth().verifyIdToken(IdToken)
     .then(function(decodedToken) {
         var email = decodedToken.email;
+        console.log(email, "EMAIL")
         if (email){
             try {
                 database.collection('Users').where("Email", "==", email).get()   //get from collection USERS using email
@@ -235,26 +226,29 @@ app.post('/getCurrentUserData', async(req, res)=>{
 
 
 app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
-    const currentUserEmail = req.body.currentUserEmail;
-    const isUserPresentQuery = await admin.auth().getUserByEmail(currentUserEmail);
-    let createdClubIds = [] , createdClubData = [],  joinedClubs = [];
-    if (currentUserEmail !== undefined) {
+    const currentUserUID = req.body.currentUserUID;
+    let userEmail;
+    let createdClubIds = []; 
+    let createdClubData = [];  
+    let joinedClubs = [];
+    const isUserPresentQuery = await database.collection('Users').where('UserID', '==', currentUserUID).get();
+    if (isUserPresentQuery.empty) {
+        res.send({status : 400, errorMessage : "Bad Request", statusmessage : "Invalid User"});
+    } else {
         try {
-            if (isUserPresentQuery){
-                const clubs = await database.collection('Clubs').where("AdminEmail", "==", currentUserEmail).get()
-                clubs.forEach((doc) => {
-                    createdClubIds.push(doc.id)
-                    createdClubData.push(doc.data())
-                    console.log("CLUBS CREATED", "Gotten all clubs")
-                })
-    
-                const getClubsJoinedofCurrentUser = await database.collection('Users').where("Email", "==", currentUserEmail).get()  
-                getClubsJoinedofCurrentUser.forEach((doc)=>{
-                    joinedClubs.push(doc.data().ClubsJoined)
-                    console.log("CLUBS JOINED", doc.data().ClubsJoined)
-                })
-                res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
-            }
+            isUserPresentQuery.forEach((doc) => {
+                userEmail = doc.data().Email;
+                joinedClubs.push(doc.data().ClubsJoined);
+                console.log("CLUBS JOINED", doc.data().ClubsJoined);
+            })
+
+            const clubs = await database.collection('Clubs').where("AdminEmail", "==", userEmail).get();
+            clubs.forEach((doc) => {
+                createdClubIds.push(doc.id);
+                createdClubData.push(doc.data());
+                console.log("CLUBS CREATED", "Gotten all clubs");
+            })
+            res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
         }
         catch(err){
             res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
