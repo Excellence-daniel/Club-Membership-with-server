@@ -16,4 +16,6 @@ router.post('/getCurrentUserData', userQueries.CurrentUserData)
 
 router.post('/CreateClub', clubQueries.CreateClub);
 
+router.post('/getClubsUsingCurrentUserData', clubQueries.GetClubsDataOfCurrentUser);
+
 module.exports = router; 
