@@ -3,6 +3,7 @@ var uuidv4 = require('uuid/v4'); //for generating unique IDs for users
 var validator = require('validator');
 var admin = require("firebase-admin");
 var firebase = require('firebase');
+var multer = require('multer')
 var config = {
     apiKey: "AIzaSyBmlRfFT3kXI2PrhP345AYsQFdeAYJL0po",
     authDomain: "club-membership-app.firebaseapp.com",
@@ -28,14 +29,15 @@ app.use(express.json());
 app.use(cors());
 const port = 2000;
 
+var signUUp = require('./routes/index.js');
+
 app.listen(port, function () {
     console.log("Working on port 2000"); //gets the server working     
 })
 
-//middleware 
+
 app.use(function(req, res, next){
     const IdToken = req.body.IdToken;
-    console.log(IdToken ,"IDToekn")
     try{
         admin.auth().verifyIdToken(IdToken)
         .then((decodedToken) => {
@@ -53,6 +55,8 @@ app.use(function(req, res, next){
     }
 })
 
+app.use('', signUUp)
+
 
 
 app.post('/', async function(req, res){   //onload of all the pages 
@@ -67,55 +71,7 @@ app.post('/', async function(req, res){   //onload of all the pages
         res.send({status : 400, statusmessage : err.message, UserPresent : false })
         console.log('User does not exist')
     }
-    console.log("USer query", userQuery.data())
-})
-
-
-//function that runs on signUp
-app.post('/signup', async (req, res)=>{   
-    const data = req.body
-    var numbers = /\d+/;
-    var specialchars = /[ !@#$%^&*()`_+\-=\[\]{};':"\\|,.<>\/?]/; 
-    const isEmail = validator.isEmail(data.email)
-    const UserUUID = uuidv4();
-    console.log(UserUUID);
-    //check if the email data sent is an actual email
-    if (data.password.length > 9 && numbers.test(data.password) === true && specialchars.test(data.password) === true){
-        if (isEmail === true){
-            //check if a user with the email exists
-            var checkIfUserExists = await database.collection('Users').where("Email", "==", data.email).get()
-            console.log(checkIfUserExists.empty)
-            if (checkIfUserExists.empty === true){
-                admin.auth().createUser({
-                    email : data.email, 
-                    password : data.password
-                })
-                .then(()=>{
-                    database.collection('Users').doc().set({
-                        Name : data.name, 
-                        Email : data.email, 
-                        EmailVerified : false, 
-                        PhoneNumber : data.phone, 
-                        Address : data.address, 
-                        Password : data.password, 
-                        ClubsJoined : [], 
-                        UserID : UserUUID
-                    })
-                    console.log("User sign in successful"); 
-                    res.send({signInStatus : 'success'});
-                })
-                .catch(err=>{
-                    console.log("/signup ---", err.message)
-                })
-            } else {
-                res.send({status : 401, statusmessage : "A User with this Email already exists. Please use another email to register."})
-            }
-        } else {
-            res.send({status : 400, statusmessage : "Email not in the right format"})
-        }
-    } else {
-        res.send({status : 400 , statusmessage : "Password is not strong.!"})
-    }
+    console.log("User query", userQuery.data())
 })
 
 
@@ -145,84 +101,37 @@ app.post('/VerifyEmail', async(req,res)=>{
     }
 })
 
-//update user's profile.
-app.post('/updateProfile', async (req, res)=>{
-    const userData = req.body
-    try{
-        await database.collection('Users').doc(userData.userID).update({
-            Name : userData.Name, 
-            Email : userData.Email,
-            Address : userData.Address,
-            PhoneNumber : userData.Phone
-        })
-        res.send({status : 200, statusmessage : "Success"})
-    }
-    catch(err){
-        res.send({status : 400, statusmessage : err.message , errorMessage : "Bad Request"})
-    }
-})
-
-
-app.post('/deleteUser', async(req, res)=>{
-    const userData = req.body
-    try { 
-        await database.collection('Users').doc(userData.userID).delete()
-        res.send({status : 200, statusmessage : "Profile Deleted"})
-    }
-    catch(err){
-        res.send({status : 200, statusmessage : err.message})
-    }
-})
-
 
 //to get the current user Data 
-app.post('/getCurrentUserData', async(req, res)=>{
-    let userData , userID;   //initialize varaibles
-    const data = req.body
-    const IdToken = data.IdToken
-    // console.log("IdToken", IdToken)
-    admin.auth().verifyIdToken(IdToken)
-    .then(function(decodedToken) {
-        var email = decodedToken.email;
-        console.log(email, "EMAIL")
-        if (email){
-            try {
-                database.collection('Users').where("Email", "==", email).get()   //get from collection USERS using email
-                .then((snapshot)=>{
-                    snapshot.forEach((doc)=>{
-                        console.log("data",doc, doc.data())
-                        userData = doc.data()
-                        userID = doc.id
-                    })
+// app.post('/getCurrentUserData', async(req, res)=>{
+//     let userData , userID;   //initialize varaibles
+//     const data = req.body
+//     const userEmail = data.userEmail
+//     // console.log("IdToken", IdToken)
+   
+//             try {
+//                 database.collection('Users').where("Email", "==", email).get()   //get from collection USERS using email
+//                 .then((snapshot)=>{
+//                     snapshot.forEach((doc)=>{
+//                         console.log("data",doc, doc.data())
+//                         userData = doc.data()
+//                         userID = doc.id
+//                     })
 
-                    if (userData){
-                        res.send({UserEmail : email, userData : userData, userID : userID})  //if data is gotten
-                    }else{
-                        res.send({UserEmail : email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
-                    } 
-                })
-                console.log("Current User Email", email, "---/getCurrentUserData")
-            }
-            catch(err){
-                console.log(err.message)
-                res.send({UserEmail : null})
-            }
-        } else {
-            console.log("No User Logged in --- /getCurrentUserData")
-            res.send({UserEmail : null, userData : null, statusmessage : "no matching documents in firebase"})
-        }
-        console.log(decodedToken, "Decoded Token")
-        // ...
-    }).catch(function(error) {
-        // Handle error
-        console.log(error)
-    });
-    // const currentUserEmail = data.currentUserEmail
-    // const currentUserData = await admin.auth().getUserByEmail(currentUserEmail);     //get current user details 
-    
-    // if (currentUserEmail !== undefined){
-       
-})
+//                     if (userData){
+//                         res.send({UserEmail : email, userData : userData, userID : userID})  //if data is gotten
+//                     }else{
+//                         res.send({UserEmail : email, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
+//                     } 
+//                 })
+//                 console.log("Current User Email", email, "---/getCurrentUserData")
+//             }
+//             catch(err){
+//                 console.log(err.message)
+//                 res.send({UserEmail : null})
+//             }
+      
+// })
 
 
 app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
