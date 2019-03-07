@@ -35,6 +35,7 @@ app.listen(port, function () {
 //middleware 
 app.use(function(req, res, next){
     const IdToken = req.body.IdToken;
+    console.log(IdToken ,"IDToekn")
     try{
         admin.auth().verifyIdToken(IdToken)
         .then((decodedToken) => {
@@ -58,15 +59,14 @@ app.post('/', async function(req, res){   //onload of all the pages
     const userID = req.body.userID;
     console.log(userID)
 
-    const userQuery = database.collection('Users').doc(userID).get()
-    console.log(userQuery, "userQuery")
-    // if (userQuery.empty !== true) {
-        // res.send({status : 200, UserPresent : true}) 
-    //     console.log('User exists')
-    // } else {
-    //     res.send({status : 400, statusmessage : err.message, UserPresent : false })
-    //     console.log('User does not exist')
-    // }
+    const userQuery = await database.collection('Users').doc(userID).get()
+    if (userQuery.data()) {
+        res.send({status : 200, UserPresent : true}) 
+        console.log('User exists')
+    } else {
+        res.send({status : 400, statusmessage : err.message, UserPresent : false })
+        console.log('User does not exist')
+    }
     console.log("USer query", userQuery.data())
 })
 
