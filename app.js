@@ -59,22 +59,6 @@ app.use('', signUUp)
 
 
 
-app.post('/', async function(req, res){   //onload of all the pages 
-    const userID = req.body.userID;
-    console.log(userID)
-
-    const userQuery = await database.collection('Users').doc(userID).get()
-    if (userQuery.data()) {
-        res.send({status : 200, UserPresent : true}) 
-        console.log('User exists')
-    } else {
-        res.send({status : 400, statusmessage : err.message, UserPresent : false })
-        console.log('User does not exist')
-    }
-    console.log("User query", userQuery.data())
-})
-
-
 app.post('/VerifyEmail', async(req,res)=>{
     const userInfo = req.body; 
     let userData, userID;
@@ -101,37 +85,6 @@ app.post('/VerifyEmail', async(req,res)=>{
     }
 })
 
-
-// app.post('/getClubsUsingCurrentUserData', async(req, res)=>{
-//     // const currentUserUID = req.body.currentUserUID;
-//     // let userEmail;
-//     // let createdClubIds = []; 
-//     // let createdClubData = [];  
-//     // let joinedClubs = [];
-//     // const isUserPresentQuery = await database.collection('Users').where('UserID', '==', currentUserUID).get();
-//     // if (isUserPresentQuery.empty) {
-//     //     res.send({status : 400, errorMessage : "Bad Request", statusmessage : "Invalid User"});
-//     // } else {
-//     //     try {
-//     //         isUserPresentQuery.forEach((doc) => {
-//     //             userEmail = doc.data().Email;
-//     //             joinedClubs.push(doc.data().ClubsJoined);
-//     //             console.log("CLUBS JOINED", doc.data().ClubsJoined);
-//     //         })
-
-//     //         const clubs = await database.collection('Clubs').where("AdminEmail", "==", userEmail).get();
-//     //         clubs.forEach((doc) => {
-//     //             createdClubIds.push(doc.id);
-//     //             createdClubData.push(doc.data());
-//     //             console.log("CLUBS CREATED", "Gotten all clubs");
-//     //         })
-//     //         res.send({status : 200, statusmessage : "Gotten all clubs with their IDs", clubIDs : createdClubIds, clubs : createdClubData, clubsjoined : joinedClubs})   
-//     //     }
-//     //     catch(err){
-//     //         res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
-//     //     }
-//     // }
-// })
 
 app.post('/getClubByClubID', (req, res)=>{
     const clubID = req.body.clubID
