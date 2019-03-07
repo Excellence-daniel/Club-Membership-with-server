@@ -93,15 +93,15 @@ exports.CurrentUserData = async function (req, res) {
             })
 
             if (userData){
-                res.send({UserEmail : userEmail, userData : userData, userID : userID})  //if data is gotten
+                res.send({status : 200, UserEmail : userEmail, userData : userData, userID : userID})  //if data is gotten
             }else{
-                res.send({UserEmail : userEmail, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
+                res.send({status : 400, UserEmail : userEmail, userData : null, userID : null, statusmessage : "no matching documents in firebase"})     //data is not gotten 
             } 
         })
         console.log("Current User Email", userEmail, "---/getCurrentUserData")
     }
     catch(err){
         console.log(err.message)
-        res.send({UserEmail : null})
+        res.send({status : 400, UserEmail : null})
     }
 } 
