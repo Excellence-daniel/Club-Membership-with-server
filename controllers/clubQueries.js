@@ -57,7 +57,7 @@ exports.GetClubsDataOfCurrentUser = async function (req, res) {
     let createdClubData = [];  
     let joinedClubs = [];
     console.log(currentUserEmail, "Email")
-    const isUserPresentQuery = await database.collection('Users').where('AdminEmail', '==', currentUserEmail).get();
+    const isUserPresentQuery = await database.collection('Users').where('Email', '==', currentUserEmail).get();
     try {
         isUserPresentQuery.forEach((doc) => {
             joinedClubs.push(doc.data().ClubsJoined);
@@ -75,4 +75,20 @@ exports.GetClubsDataOfCurrentUser = async function (req, res) {
     catch(err){
         res.send({status : 400, statusmessage : "Bad Request", clubID : [], clubs : [], clubsjoined : [[]]})
     }
+}
+
+exports.GetClubDataByID = async function (req, res){
+    const clubID = req.body.clubID
+    let clubData, dClubID;
+    database.collection('Clubs').where("ClubID", "==", clubID).get()
+    .then((snapshot)=>{
+        snapshot.forEach((doc)=>{
+            clubData = doc.data()
+            dClubID = doc.id
+        })
+        res.send({status : 200, ClubData : clubData, ClubID : dClubID})
+    })
+    .catch(err=>{
+        res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message, ClubData : [], ClubID : []})
+    })
 }
