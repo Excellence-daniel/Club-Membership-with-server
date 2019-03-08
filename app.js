@@ -86,22 +86,22 @@ app.post('/VerifyEmail', async(req,res)=>{
 })
 
 
-app.post('/getClubByClubID', (req, res)=>{
-    const clubID = req.body.clubID
-    let clubData, dClubID;
-    database.collection('Clubs').where("ClubID", "==", clubID).get()
-    .then((snapshot)=>{
-        snapshot.forEach((doc)=>{
-            clubData = doc.data()
-            dClubID = doc.id
-        })
-        res.send({status : 200, ClubData : clubData, ClubID : dClubID})
-    })
-    .catch(err=>{
-        res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message})
-    })
+// app.post('/getClubByClubID', (req, res)=>{
+//     const clubID = req.body.clubID
+//     let clubData, dClubID;
+//     database.collection('Clubs').where("ClubID", "==", clubID).get()
+//     .then((snapshot)=>{
+//         snapshot.forEach((doc)=>{
+//             clubData = doc.data()
+//             dClubID = doc.id
+//         })
+//         res.send({status : 200, ClubData : clubData, ClubID : dClubID})
+//     })
+//     .catch(err=>{
+//         res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message})
+//     })
 
-})
+// })
 
 app.post('/EditClub', async (req, res)=>{
     const clubInfo = req.body;
