@@ -154,3 +154,30 @@ exports.DeleteClub = async function (req, res){
     }
     console.log(club.data().Members);
 }
+
+exports.InviteMembers = async function (req, res){
+    var invites = req.body 
+    const newInvite = {"email": invites.email, "accepted": false}
+    try {
+        const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get()
+        const clubInvites = getClubWithDocID.data().Invites
+        const clubMemberLimit = getClubWithDocID.data().MemberLimit
+        const clubMembers = getClubWithDocID.data().Members
+        var clubMembersLength = clubMembers.length
+
+        if (clubMembersLength < clubMemberLimit){
+            clubInvites.push(newInvite)
+            console.log ("Invites", clubInvites)
+            await database.collection('Clubs').doc(invites.clubID).update({
+                Invites : clubInvites
+            })
+            res.send({status : 200, statusmessage : "Success"})
+        } else {
+            res.send({status : 400, statusmessage : "Members Limit Reached"})
+        }
+    }
+    catch(err){
+        console.log(err)
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request : 400"})
+    }
+}

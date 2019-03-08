@@ -26,4 +26,6 @@ router.post('/UpdateClub', clubQueries.UpdateClub);
 
 router.post('/deleteClub', clubQueries.DeleteClub);
 
+router.post('/InviteMembers', clubQueries.InviteMembers)
+
 module.exports = router; 
