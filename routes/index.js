@@ -20,4 +20,8 @@ router.post('/getClubsUsingCurrentUserData', clubQueries.GetClubsDataOfCurrentUs
 
 router.post('/getClubByClubID', clubQueries.GetClubDataByID);
 
+router.post('/EditClub', clubQueries.EditClub);
+
+router.post('/UpdateClub', clubQueries.UpdateClub);
+
 module.exports = router; 
