@@ -86,34 +86,6 @@ app.post('/VerifyEmail', async(req,res)=>{
 })
 
 
-// app.post('/EditClub', async (req, res)=>{
-//     const clubInfo = req.body;
-//     let clubdata;
-//     try {
-//         const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-//         clubdata = club.data()
-//         res.send({status : 200, statusmessage : "success", clubdata})
-//     }
-//     catch(err){
-//         res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
-//     }
-// })
-
-// app.post('/UpdateClub', async (req,res)=>{
-//     const clubInfo = req.body; 
-//     try {
-//         const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
-//             ClubName : clubInfo.clubname, 
-//             ClubType : clubInfo.clubtype, 
-//             MemberLimit : clubInfo.membersLimit
-//         })
-//         res.send({status : 200, statusmessage : "success"})
-//     }
-//     catch(err){
-//         res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
-//     }
-// })
-
 app.post('/leaveClub', async (req, res)=>{
     const clubInfo = req.body;
     let clubsjoined, userID, clubMembers, clubInvites, clubbID;
@@ -226,37 +198,37 @@ app.post('/joinClub', async(req, res)=>{
     }
 })
 
-app.post('/deleteClub', async (req, res)=>{
-    const clubInfo = req.body;
-    console.log(clubInfo);
-    try {
-        const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-        const clubMembers = club.data().Members
-        if (clubMembers.length > 0){
-            clubMembers.forEach(async(member)=>{
-                var memberMail = member.email;
-                var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
-                getUsersWithMail.forEach(async(doc)=>{
-                    var clubsjoined = doc.data().ClubsJoined    //clubs joined of each member 
-                    var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName)     //get the index of this club
-                    clubsjoined.splice(getClubIndex,1)
-                    await database.collection('Users').doc(doc.id).update({
-                        ClubsJoined : clubsjoined
-                    })
-                })
-            })
-            await database.collection('Clubs').doc(clubInfo.clubID).delete()
-            res.send({status : 200, statusmessage : "Club Deleted"})
-        }else {
-            await database.collection('Clubs').doc(clubInfo.clubID).delete()
-            res.send({status : 200, statusmessage : "Club Deleted"})
-        }
-    }
-    catch(err){
-        res.send({status : err.code, statusmessage : err.message})
-    }
-    console.log(club.data().Members)
-})
+// app.post('/deleteClub', async (req, res)=>{
+//     const clubInfo = req.body;
+//     console.log(clubInfo);
+//     try {
+//         const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+//         const clubMembers = club.data().Members
+//         if (clubMembers.length > 0){
+//             clubMembers.forEach(async(member)=>{
+//                 var memberMail = member.email;
+//                 var getUsersWithMail = await database.collection('Users').where('Email', "==", memberMail).get()
+//                 getUsersWithMail.forEach(async(doc)=>{
+//                     var clubsjoined = doc.data().ClubsJoined    //clubs joined of each member 
+//                     var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName)     //get the index of this club
+//                     clubsjoined.splice(getClubIndex,1)
+//                     await database.collection('Users').doc(doc.id).update({
+//                         ClubsJoined : clubsjoined
+//                     })
+//                 })
+//             })
+//             await database.collection('Clubs').doc(clubInfo.clubID).delete()
+//             res.send({status : 200, statusmessage : "Club Deleted"})
+//         }else {
+//             await database.collection('Clubs').doc(clubInfo.clubID).delete()
+//             res.send({status : 200, statusmessage : "Club Deleted"})
+//         }
+//     }
+//     catch(err){
+//         res.send({status : err.code, statusmessage : err.message})
+//     }
+//     console.log(club.data().Members)
+// })
 
 app.post('/getClubMembers', async (req, res)=>{
     const clubInfo = req.body; 
