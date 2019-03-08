@@ -86,50 +86,33 @@ app.post('/VerifyEmail', async(req,res)=>{
 })
 
 
-// app.post('/getClubByClubID', (req, res)=>{
-//     const clubID = req.body.clubID
-//     let clubData, dClubID;
-//     database.collection('Clubs').where("ClubID", "==", clubID).get()
-//     .then((snapshot)=>{
-//         snapshot.forEach((doc)=>{
-//             clubData = doc.data()
-//             dClubID = doc.id
-//         })
-//         res.send({status : 200, ClubData : clubData, ClubID : dClubID})
-//     })
-//     .catch(err=>{
-//         res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message})
-//     })
-
+// app.post('/EditClub', async (req, res)=>{
+//     const clubInfo = req.body;
+//     let clubdata;
+//     try {
+//         const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+//         clubdata = club.data()
+//         res.send({status : 200, statusmessage : "success", clubdata})
+//     }
+//     catch(err){
+//         res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
+//     }
 // })
 
-app.post('/EditClub', async (req, res)=>{
-    const clubInfo = req.body;
-    let clubdata;
-    try {
-        const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
-        clubdata = club.data()
-        res.send({status : 200, statusmessage : "success", clubdata})
-    }
-    catch(err){
-        res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
-    }
-})
-
-app.post('/UpdateClub', async (req,res)=>{
-    const clubInfo = req.body; 
-    try {
-        const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
-            ClubName : clubInfo.clubname, 
-            ClubType : clubInfo.clubtype, 
-            MemberLimit : clubInfo.membersLimit
-        })
-        res.send({status : 200, statusmessage : "success"})
-    }
-    catch(err){
-        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
-    }
-})
+// app.post('/UpdateClub', async (req,res)=>{
+//     const clubInfo = req.body; 
+//     try {
+//         const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
+//             ClubName : clubInfo.clubname, 
+//             ClubType : clubInfo.clubtype, 
+//             MemberLimit : clubInfo.membersLimit
+//         })
+//         res.send({status : 200, statusmessage : "success"})
+//     }
+//     catch(err){
+//         res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
+//     }
+// })
 
 app.post('/leaveClub', async (req, res)=>{
     const clubInfo = req.body;
