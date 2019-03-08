@@ -92,3 +92,33 @@ exports.GetClubDataByID = async function (req, res){
         res.send({status : 400, errorMessage : "Bad Request", statusmessage : err.message, ClubData : [], ClubID : []})
     })
 }
+
+
+exports.EditClub = async function (req, res){
+    const clubInfo = req.body;
+    let clubdata;
+    try {
+        const club = await database.collection('Clubs').doc(clubInfo.clubID).get()
+        clubdata = club.data()
+        res.send({status : 200, statusmessage : "success", clubdata})
+    }
+    catch(err){
+        res.send({status : err, statusmessage : err.message, errorMessage : "Bad Request"})
+    }
+}
+
+
+exports.UpdateClub = async function (req, res){
+    const clubInfo = req.body; 
+    try {
+        const updateClub = await database.collection('Clubs').doc(clubInfo.id).update({
+            ClubName : clubInfo.clubname, 
+            ClubType : clubInfo.clubtype, 
+            MemberLimit : clubInfo.membersLimit
+        })
+        res.send({status : 200, statusmessage : "success"})
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request"})
+    }
+}
