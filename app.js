@@ -36,183 +36,54 @@ app.listen(port, function () {
 })
 
 
-app.use('/joinClub', async function (req, res){
-    const clubInfo = req.body;
-    let clubID;
-    let clubMembers;
-    let clubMemberLimit;
-    let userClubsJoined;
-    let userID;
-    let userData;
-    let clubInvites;  
-    const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
-    const clubQuery = await database.collection('Clubs').where('ClubID', '==', clubInfo.clubID).get()
-    console.log(clubQuery.empty)
-    if (clubQuery.empty){
-        res.send({status : 400, statusmessage : 'The Club does not exist!', errorMessage  : 'Bad Request'})
-    } else {
-        console.log(clubInfo)
-        try {
-            const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
-            const getClub = await database.collection('Clubs').where("ClubID", "==", clubInfo.clubID).get()
-    
-            if (getUser.docs.length > 0){ 
-                //check if the club exists
-                if (getClub.empty === true){
-                    console.log("Club does not exist")
-                    res.send({status : 401 , statusmessage : "Club does not exist"})
-                } else {
-                    //get members of the club
-                    getClub.forEach((snapshot)=>{
-                        console.log(snapshot.data().Members)
-                        clubMembers = snapshot.data().Members;
-                        clubInvites = snapshot.data().Invites;
-                        clubMemberLimit = snapshot.data().MemberLimit
-                        clubID = snapshot.id
+app.use('/signup', async function(req, res){
+    const data = req.body
+    var numbers = /\d+/;
+    var specialchars = /[ !@#$%^&*()`_+\-=\[\]{};':"\\|,.<>\/?]/; 
+    const isEmail = validator.isEmail(data.email)
+    const UserUUID = uuidv4();
+    console.log(UserUUID);
+    //check if the email data sent is an actual email
+    if (data.password.length > 9 && numbers.test(data.password) === true && specialchars.test(data.password) === true){
+        if (isEmail === true){
+            //check if a user with the email exists
+            var checkIfUserExists = await database.collection('Users').where("Email", "==", data.email).get()
+            console.log(checkIfUserExists.empty)
+            if (checkIfUserExists.empty === true){
+                admin.auth().createUser({
+                    email : data.email, 
+                    password : data.password
+                })
+                .then(()=>{
+                    database.collection('Users').doc().set({
+                        Name : data.name, 
+                        Email : data.email, 
+                        EmailVerified : false, 
+                        PhoneNumber : data.phone, 
+                        Address : data.address, 
+                        Password : data.password, 
+                        ClubsJoined : [], 
+                        UserID : UserUUID
                     })
-                    //check if the user is alredy a member of the club. 
-                    var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
-                    if (checkIfUserEmailExistsInClubMemberArr.length > 0){
-                        console.log("You already belong to this club")
-                        res.send({status : 401 , statusmessage : "You already belong to this club"})
-                    } else {
-                        //check if the member limit is reached
-                        if (clubMembers.length < clubMemberLimit){      //if limit is not reached
-                            getUser.forEach(snapshot=>{
-                                userID = snapshot.id;   //get user id 
-                                userData = snapshot.data()  //get all userData
-                                console.log("SNAP USER", snapshot.data())
-                                console.log("SNAPSHOT", snapshot.data())
-                            })
-                            console.log("USER DATA" , userData)
-                            userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
-                            userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
-                            database.collection('Users').doc(userID).update({
-                                ClubsJoined : userClubsJoined       //update array
-                            })
-    
-                            //if update is successful
-                            const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
-                            clubMembers.push(newMember);    //append into the array clubMembers
-                            const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);  //get the index of the invite in the club user email
-                            clubInvites[inviteID].accepted = true;      //change the boolean value to true
-                            //update Members and Invites
-                            database.collection('Clubs').doc(clubID).update({
-                                Members : clubMembers,
-                                Invites : clubInvites
-                            })
-                            res.send({status : 200 , statusmessage : "You have joined this club!"});
-                        } else {
-                            console.log("Club Limit Reached. You can't join this club")
-                            res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
-                        }
-                    }
-                }
+                    console.log("User sign in successful"); 
+                    res.send({signInStatus : 'success'});
+                })
+                .catch(err=>{
+                    console.log("/signup ---", err.message)
+                })
             } else {
-                res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
-                console.log('User does not have an account with club membership')
+                res.send({status : 401, statusmessage : "A User with this Email already exists. Please use another email to register."})
             }
+        } else {
+            res.send({status : 400, statusmessage : "Email not in the right format"})
         }
-        catch(err){
-            res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
-        }
-    }
-})
-// app.post('/joinClub', async(req, res)=>{
-    // await firebase.auth().signOut();
-    // const clubInfo = req.body;
-    // console.log(clubInfo)
-    // let clubID, clubMembers, clubMemberLimit, userClubsJoined, userID, userData, clubInvites;  
-    // const newClub = {"Club" : clubInfo.clubname, "Type" : clubInfo.clubtype}
-    // try {
-    //     const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
-    //     const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-
-    //     if (getUser.docs.length > 0){ 
-    //         //check if the club exists
-    //         if (getClub.empty === true){
-    //             console.log("Club does not exist")
-    //             res.send({status : 401 , statusmessage : "Club does not exist"})
-    //         } else {
-    //             //get members of the club
-    //             getClub.forEach((snapshot)=>{
-    //                 console.log(snapshot.data().Members)
-    //                 clubMembers = snapshot.data().Members;
-    //                 clubInvites = snapshot.data().Invites;
-    //                 clubMemberLimit = snapshot.data().MemberLimit
-    //                 clubID = snapshot.id
-    //             })
-    //             //check if the user is alredy a member of the club. 
-    //             var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
-    //             if (checkIfUserEmailExistsInClubMemberArr.length > 0){
-    //                 console.log("You already belong to this club")
-    //                 res.send({status : 401 , statusmessage : "You already belong to this club"})
-    //             } else {
-    //                 //check if the member limit is reached
-    //                 if (clubMembers.length < clubMemberLimit){      //if limit is not reached
-    //                     getUser.forEach(snapshot=>{
-    //                         userID = snapshot.id;   //get user id 
-    //                         userData = snapshot.data()  //get all userData
-    //                         console.log("SNAP USER", snapshot.data())
-    //                         console.log("SNAPSHOT", snapshot.data())
-    //                     })
-    //                     console.log("USER DATA" , userData)
-    //                     userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
-    //                     userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
-    //                     database.collection('Users').doc(userID).update({
-    //                         ClubsJoined : userClubsJoined       //update array
-    //                     })
-
-    //                     //if update is successful
-    //                     const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
-    //                     clubMembers.push(newMember);    //append into the array clubMembers
-    //                     const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);  //get the index of the invite in the club user email
-    //                     clubInvites[inviteID].accepted = true;      //change the boolean value to true
-    //                     //update Members and Invites
-    //                     database.collection('Clubs').doc(clubID).update({
-    //                         Members : clubMembers,
-    //                         Invites : clubInvites
-    //                     })
-    //                     res.send({status : 200 , statusmessage : "You have joined this club!"});
-    //                 } else {
-    //                     console.log("Club Limit Reached. You can't join this club")
-    //                     res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
-    //                 }
-    //             }
-    //         }
-    //     } else {
-    //         res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
-    //         console.log('User does not have an account with club membership')
-    //     }
-    // }
-    // catch(err){
-    //     res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
-    // }
-// })
-
-
-app.use(function(req, res, next){
-    const IdToken = req.body.IdToken;
-    try{
-        admin.auth().verifyIdToken(IdToken)
-        .then((decodedToken) => {
-            console.log('Middleware Check -- User Found')
-            next();
-        })
-        .catch((err) => {
-            console.log('HHey', err, 'User not found');
-            res.send({status : 400, statusmessage : 'User not found!'});
-        })
-    }
-    catch(error){
-        console.log('hhi', error);
-        res.send({status : 400, statusmessage : 'User not found!'});
+    } else {
+        res.send({status : 400 , statusmessage : "Password is not strong.!"})
     }
 })
 
-app.use('', signUUp)
 
-app.post('/VerifyEmail', async(req,res)=>{
+app.use('/VerifyEmail', async(req,res)=>{
     const userInfo = req.body; 
     let userData, userID;
     try {
@@ -239,42 +110,109 @@ app.post('/VerifyEmail', async(req,res)=>{
 })
 
 
-app.post('/leaveClub', async (req, res)=>{
+app.use('/joinClub', async function (req, res){
     const clubInfo = req.body;
-    let clubsjoined, userID, clubMembers, clubInvites, clubbID;
-    try {
-        const getUserData = await database.collection('Users').where("Email", "==", clubInfo.currentUserEmail).get()
-        getUserData.forEach((doc)=>{
-            clubsjoined = doc.data().ClubsJoined;
-            userID = doc.id;
-        })
-
-        var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
-        clubsjoined.splice(clubID, 1);
-        await database.collection('Users').doc(userID).update({
-            ClubsJoined : clubsjoined
-        })
-
-         const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
-         getClub.forEach((doc)=>{
-            clubMembers = doc.data().Members;
-            clubInvites = doc.data().Invites;
-            clubbID = doc.id;
-        })
-
-        const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === clubInfo.currentUserEmail)
-        const getUserIDInClubInvitesArr = clubInvites.findIndex(member => member.email === clubInfo.currentUserEmail)
-
-        clubMembers.splice(getUserIDInClubMembersArr, 1);
-        clubInvites.splice(getUserIDInClubInvitesArr, 1);
-
-        await database.collection('Clubs').doc(clubbID).update({
-            Members : clubMembers,
-            Invites : clubInvites
-        })
-        res.send({status : 200, statusmessage : "success"})
-    }
-    catch(err){
-        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})        
+    let clubID;
+    let clubMembers;
+    let clubMemberLimit;
+    let userClubsJoined;
+    let userID;
+    let userData;
+    let clubInvites;  
+    let newClub;
+    const clubQuery = await database.collection('Clubs').where('ClubID', '==', clubInfo.clubID).get()
+    console.log(clubQuery.empty)
+    if (clubQuery.empty){
+        res.send({status : 400, statusmessage : 'The Club does not exist!', errorMessage  : 'Bad Request'})
+    } else {
+        console.log(clubInfo)
+        try {
+            const getUser = await database.collection('Users').where("Email", "==", clubInfo.userEmail).get()
+            const getClub = await database.collection('Clubs').where("ClubID", "==", clubInfo.clubID).get()
+            console.log(getUser.docs.length, "LENGTH")
+            if (getUser.docs.length > 0){ 
+                //check if the club exists
+                if (getClub.empty === true){
+                    console.log("Club does not exist")
+                    res.send({status : 401 , statusmessage : "Club does not exist"})
+                } else {
+                    //get members of the club
+                    getClub.forEach((snapshot)=>{
+                        console.log("MEMBERS", snapshot.data().Members)
+                        clubMembers = snapshot.data().Members;
+                        clubInvites = snapshot.data().Invites;
+                        clubMemberLimit = snapshot.data().MemberLimit
+                        clubID = snapshot.id
+                        newClub = {"Club" : snapshot.data().ClubName, "Type" : snapshot.data().ClubType}
+                        console.log("CLUB ID", clubID)
+                    })
+                    //check if the user is alredy a member of the club. 
+                    var checkIfUserEmailExistsInClubMemberArr = clubMembers.filter(userCheck => (userCheck.email === clubInfo.userEmail))
+                    if (checkIfUserEmailExistsInClubMemberArr.length > 0){
+                        console.log("You already belong to this club")
+                        res.send({status : 401 , statusmessage : "You already belong to this club"})
+                    } else {
+                        //check if the member limit is reached
+                        if (clubMembers.length < clubMemberLimit){      //if limit is not reached
+                            getUser.forEach(snapshot=>{
+                                userID = snapshot.id;   //get user id 
+                                userData = snapshot.data()  //get all userData
+                                console.log("SNAP USER", snapshot.data())
+                                console.log("SNAPSHOT", snapshot.id)
+                            })
+                            console.log("USER DATA" , userData)
+                            userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
+                            userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
+                            database.collection('Users').doc(userID).update({
+                                ClubsJoined : userClubsJoined       //update array
+                            })
+    
+                            //if update is successful
+                            const newMember = {"name" : userData.Name, "email" : userData.Email}    //initialize new member
+                            clubMembers.push(newMember);    //append into the array clubMembers
+                            const inviteID = clubInvites.findIndex(invite => invite.email === clubInfo.userEmail);  //get the index of the invite in the club user email
+                            clubInvites[inviteID].accepted = true;      //change the boolean value to true
+                            //update Members and Invites
+                            console.log("JOINCLUB CLUBID", clubID);
+                            database.collection('Clubs').doc(clubID).update({
+                                Members : clubMembers,
+                                Invites : clubInvites
+                            })
+                            res.send({status : 200 , statusmessage : "You have joined this club!"});
+                        } else {
+                            console.log("Club Limit Reached. You can't join this club")
+                            res.send({status : 401, statusmessage : "Club Member Limit Reached. You can't join this club."});
+                        }
+                    }
+                }
+            } else {
+                res.send({status : 402 , statusmessage : "Invited email does not have an account"})     //send 402 if user doesnt have an account with club membership app. 
+                console.log('User does not have an account with club membership')
+            }
+        }
+        catch(err){
+            res.send({status : 400 , statusmessage : err.message, errorMessage : "Bad Request"});
+        }
     }
 })
+
+app.use(function(req, res, next){
+    const IdToken = req.body.IdToken;
+    try{
+        admin.auth().verifyIdToken(IdToken)
+        .then((decodedToken) => {
+            console.log('Middleware Check -- User Found')
+            next();
+        })
+        .catch((err) => {
+            console.log('HHey', err, 'User not found');
+            res.send({status : 400, statusmessage : 'User not found!'});
+        })
+    }
+    catch(error){
+        console.log('hhi', error);
+        res.send({status : 400, statusmessage : 'User not found!'});
+    }
+})
+
+app.use('', signUUp);
