@@ -1,14 +1,14 @@
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
 
-const userQueries = require('../controllers/userQueries.js')
-const clubQueries = require('../controllers/clubQueries.js')
+const userQueries = require('../controllers/userQueries.js');
+const clubQueries = require('../controllers/clubQueries.js');
 
 router.post('/updateProfile', userQueries.UpdateUser);
 
 router.post('/deleteUser', userQueries.DeleteUser);
 
-router.post('/getCurrentUserData', userQueries.CurrentUserData)
+router.post('/getCurrentUserData', userQueries.CurrentUserData);
 
 
 
@@ -26,6 +26,6 @@ router.post('/deleteClub', clubQueries.DeleteClub);
 
 router.post('/InviteMembers', clubQueries.InviteMembers); 
 
-
+router.post('/leaveClub', clubQueries.LeaveClub);
 
 module.exports = router; 
