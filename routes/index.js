@@ -4,8 +4,6 @@ const router = express.Router()
 const userQueries = require('../controllers/userQueries.js')
 const clubQueries = require('../controllers/clubQueries.js')
 
-router.post('/signup', userQueries.createUser);
-
 router.post('/updateProfile', userQueries.UpdateUser);
 
 router.post('/deleteUser', userQueries.DeleteUser);
@@ -26,6 +24,8 @@ router.post('/UpdateClub', clubQueries.UpdateClub);
 
 router.post('/deleteClub', clubQueries.DeleteClub);
 
-router.post('/InviteMembers', clubQueries.InviteMembers)
+router.post('/InviteMembers', clubQueries.InviteMembers); 
+
+
 
 module.exports = router; 
