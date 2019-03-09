@@ -181,3 +181,43 @@ exports.InviteMembers = async function (req, res){
         res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request : 400"})
     }
 }
+
+exports.LeaveClub = async function (req, res){
+    const clubInfo = req.body;
+    let clubsjoined, userID, clubMembers, clubInvites, clubbID;
+    try {
+        const getUserData = await database.collection('Users').where("Email", "==", clubInfo.currentUserEmail).get()
+        getUserData.forEach((doc)=>{
+            clubsjoined = doc.data().ClubsJoined;
+            userID = doc.id;
+        })
+
+        var clubID = clubsjoined.findIndex(clubs => clubs.Club === clubInfo.clubname)
+        clubsjoined.splice(clubID, 1);
+        await database.collection('Users').doc(userID).update({
+            ClubsJoined : clubsjoined
+        })
+
+         const getClub = await database.collection('Clubs').where("ClubName", "==", clubInfo.clubname).get()
+         getClub.forEach((doc)=>{
+            clubMembers = doc.data().Members;
+            clubInvites = doc.data().Invites;
+            clubbID = doc.id;
+        })
+
+        const getUserIDInClubMembersArr = clubMembers.findIndex(member => member.email === clubInfo.currentUserEmail)
+        const getUserIDInClubInvitesArr = clubInvites.findIndex(member => member.email === clubInfo.currentUserEmail)
+
+        clubMembers.splice(getUserIDInClubMembersArr, 1);
+        clubInvites.splice(getUserIDInClubInvitesArr, 1);
+
+        await database.collection('Clubs').doc(clubbID).update({
+            Members : clubMembers,
+            Invites : clubInvites
+        })
+        res.send({status : 200, statusmessage : "success"})
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message, errorMessage : "Bad Request - I"})        
+    }
+}
