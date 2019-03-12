@@ -3,11 +3,11 @@ var validator = require('validator');
 var admin = require('firebase-admin');
 var database = admin.firestore();
 
-exports.CreateClub = function (req, res) {
+exports.CreateClub = async function (req, res) {
     const clubData = req.body;      //get request body
     const clubID = uuidv4();
     try {
-        database.collection('Clubs').doc().set({
+        await database.collection('Clubs').doc().set({
             ClubName : clubData.clubName, 
             ClubType : clubData.clubType, 
             AdminEmail : clubData.email, 
@@ -52,17 +52,18 @@ exports.GetClubsDataOfCurrentUser = async function (req, res) {
 exports.GetClubDataByID = async function (req, res){
     const clubID = req.body.clubID;
     let clubData, dClubID;
-    database.collection('Clubs').where('ClubID', '==', clubID).get()
-    .then((snapshot)=>{
-        snapshot.forEach((doc)=>{
+    try {
+        const getClubQuery = await database.collection('Clubs').where('ClubID', '==', clubID).get();
+        getClubQuery.forEach((doc) => {
+            console.log(doc.data());
             clubData = doc.data();
             dClubID = doc.id;
         })
-        res.send({status : 200, ClubData : clubData, ClubID : dClubID});
-    })
-    .catch(err=>{
+        res.send({ status: 200, ClubData: clubData, ClubID: dClubID });
+    }
+    catch(err) {
         res.send({status : 400, errorMessage : 'Bad Request', statusmessage : err.message, ClubData : [], ClubID : []});
-    })
+    }
 }
 
 
@@ -102,7 +103,7 @@ exports.DeleteClub = async function (req, res){
         const club = await database.collection('Clubs').doc(clubInfo.clubID).get();
         const clubMembers = club.data().Members;
         if (clubMembers.length > 0){
-            clubMembers.forEach(async(member)=>{
+            clubMembers.forEach( async (member)=>{
                 var memberMail = member.email;
                 var getUsersWithMail = await database.collection('Users').where('Email', '==', memberMail).get();
                 getUsersWithMail.forEach(async(doc)=>{
@@ -210,14 +211,22 @@ exports.DeleteMember = async function (req, res) {
     var clubMemberClubsJoined;
     const clubID = clubInfo.clubID;
     console.log(clubInfo);
-    await admin.auth().verifyIdToken(clubInfo.IdToken)
-    .then((decodedToken) => {
-        adminEmail = decodedToken.email;
-        console.log(decodedToken, decodedToken.email);
-    })
-    .catch((err) => {
+    const verifyTokenQuery = await admin.auth().verifyIdToken(clubInfo.IdToken);
+    console.log('VerifyToken', verifyTokenQuery);
+    try {
+        adminEmail = verifyTokenQuery.email;
+        console.log('AdminEmail', adminEmail);
+    }
+    catch (err) {
         console.log(err)
-    })
+    }
+    // .then((decodedToken) => {
+    //     adminEmail = decodedToken.email;
+    //     console.log(decodedToken, decodedToken.email);
+    // })
+    // .catch((err) => {
+    //     console.log(err)
+    // })
     console.log(adminEmail, clubInfo.clubMemberEmail);
     if (adminEmail !== undefined){
         let isUserAnAdmin;
@@ -227,52 +236,66 @@ exports.DeleteMember = async function (req, res) {
         })       
         console.log('Is user admin?', isUserAnAdmin);
 
-        if (isUserAnAdmin){
-            database.collection('Clubs').where('ClubID','==', clubID).get()
-            .then((snapshot) => {
-                snapshot.forEach((doc)=>{
+        if (isUserAnAdmin) {
+            try {
+                const getClubQuery = await database.collection('Clubs').where('ClubID', '==', clubID).get()
+                getClubQuery.forEach((doc) => {
                     console.log(doc.data())
                     clubMembers = doc.data().Members;
                     clubName = doc.data().ClubName;
                     clubDocID = doc.id;
                 })
+                // .then((snapshot) => {
+                // snapshot.forEach((doc)=>{
+                //     console.log(doc.data())
+                //     clubMembers = doc.data().Members;
+                //     clubName = doc.data().ClubName;
+                //     clubDocID = doc.id;
+                // })
 
                 console.log(clubMembers)
                 const memberId = clubMembers.findIndex(member => member.email === clubInfo.clubMemberEmail);
                 console.log(memberId, 'Member ID')
-                if (memberId >= 0){
-                    clubMembers.splice(memberId, 1);                
-                    database.collection('Clubs').doc(clubDocID).update({
-                        Members : clubMembers
+                if (memberId >= 0) {
+                    clubMembers.splice(memberId, 1);
+                    await database.collection('Clubs').doc(clubDocID).update({
+                        Members: clubMembers
                     })
-                    .then(()=>{
-                        database.collection('Users').where('Email', '==', clubInfo.clubMemberEmail).get()
-                        .then((snapshot)=>{
-                            snapshot.forEach((doc)=>{
-                                clubMemberClubsJoined = doc.data().ClubsJoined;
-                                clubMemberDocID = doc.id;
-                            })
 
-                            const clubIdinClubsJoinedArr = clubMemberClubsJoined.findIndex(club => club.Club === clubName);
-                            console.log(clubIdinClubsJoinedArr, 'Club ID')
-                            clubMemberClubsJoined.splice(clubIdinClubsJoinedArr, 1);
-
-                            database.collection('Users').doc(clubMemberDocID).update({
-                                ClubsJoined : clubMemberClubsJoined
-                            })
-                            res.send({status : 200, statusmessage : 'Deleted Member'})
-                        })
-                        .catch((err) => {
-                            res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
-                        })
+                    const getUserQuery = await database.collection('Users').where('Email', '==', clubInfo.clubMemberEmail).get();
+                    getUserQuery.forEach((doc) => {
+                        clubMemberClubsJoined = doc.data().ClubsJoined;
+                        clubMemberDocID = doc.id;
                     })
-                    .catch((err)=>{
-                        console.log(err);
-                    })                    
-                } else {
-                    res.send({status : 400, errorMessage : err.message, statusmessage : 'Not a member of this club'})
+                    // .then((snapshot)=>{
+                    //     snapshot.forEach((doc)=>{
+                    //         clubMemberClubsJoined = doc.data().ClubsJoined;
+                    //         clubMemberDocID = doc.id;
+                    //     })
+
+                    const clubIdinClubsJoinedArr = clubMemberClubsJoined.findIndex(club => club.Club === clubName);
+                    console.log(clubIdinClubsJoinedArr, 'Club ID')
+                    clubMemberClubsJoined.splice(clubIdinClubsJoinedArr, 1);
+
+                    await database.collection('Users').doc(clubMemberDocID).update({
+                        ClubsJoined: clubMemberClubsJoined
+                    })
+                    res.send({ status: 200, statusmessage: 'Deleted Member' })
+                    // })
+                    // .catch((err) => {
+                    //     res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
+                    // })
+                    // })
+                    // .catch((err)=>{
+                    //     console.log(err);
+                    // })
                 }
-            })
+            }
+            catch (err) {
+                res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
+            }
+        } else {
+            res.send({status : 400, errorMessage : err.message, statusmessage : 'Not a member of this club'})
         }
     }
 }

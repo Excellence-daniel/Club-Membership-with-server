@@ -48,28 +48,29 @@ app.use('/signup', async function(req, res){
         if (isEmail) {
             //check if a user with the email exists
             var checkIfUserExists = await database.collection('Users').where('Email', '==', data.email).get();
-            if (checkIfUserExists.empty){
-                admin.auth().createUser({
-                    email : data.email, 
-                    password : data.password
-                })
-                .then(()=>{
-                    database.collection('Users').doc().set({
-                        Name : data.name, 
-                        Email : data.email, 
-                        EmailVerified : false, 
-                        PhoneNumber : data.phone, 
-                        Address : data.address, 
-                        Password : data.password, 
-                        ClubsJoined : [], 
-                        UserID : UserUUID
+            if (checkIfUserExists.empty) {
+                try { 
+                    await admin.auth().createUser({
+                        email: data.email,
+                        password: data.password
                     })
-                    console.log('User sign in successful'); 
-                    res.send({signInStatus : 'success'});
-                })
-                .catch(err=>{
-                    console.log('/signup ---', err.message);
-                })
+                    await database.collection('Users').doc().set({
+                        Name: data.name,
+                        Email: data.email,
+                        EmailVerified: false,
+                        PhoneNumber: data.phone,
+                        Address: data.address,
+                        Password: data.password,
+                        ClubsJoined: [],
+                        UserID: UserUUID
+                    })
+                    console.log('User sign in successful');
+                    res.send({ status : 200, signInStatus: 'success' });
+                } 
+                catch (err) {
+                    console.log('/signup ---', err.message);       
+                    res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});            
+                }
             } else {
                 res.send({status : 401, statusmessage : 'A User with this Email already exists. Please use another email to register.'});
             }
@@ -97,8 +98,8 @@ app.use('/VerifyEmail', async(req,res)=>{
             await database.collection('Users').doc(userID).update({
                 EmailVerified : true
             })
-                res.send({status : 200, statusmessage : 'success'});
-                console.log('Email Verified Successfully');
+            res.send({status : 200, statusmessage : 'success'});
+            console.log('Email Verified Successfully');
         } else {
             res.send({status : 401 , statusmessage : 'Email Verfied Already'});
         }
@@ -121,7 +122,7 @@ app.use('/joinClub', async function (req, res){
     let clubInvites;  
     let newClub;
     const clubQuery = await database.collection('Clubs').where('ClubID', '==', clubInfo.clubID).get();
-    if (clubQuery.empty){
+    if (clubQuery.empty) {
         res.send({status : 400, statusmessage : 'The Club does not exist!', errorMessage  : 'Bad Request'});
     } else {
         try {
@@ -159,7 +160,7 @@ app.use('/joinClub', async function (req, res){
                             console.log('USER DATA' , userData);
                             userClubsJoined = userData.ClubsJoined;     //club joined array in the user data gottten
                             userClubsJoined.push(newClub);      //add the new club array to the userclubsjoined array
-                            database.collection('Users').doc(userID).update({
+                            await database.collection('Users').doc(userID).update({
                                 ClubsJoined : userClubsJoined       //update array
                             })
     
@@ -170,7 +171,7 @@ app.use('/joinClub', async function (req, res){
                             clubInvites[inviteID].accepted = true;      //change the boolean value to true
                             //update Members and Invites
                             console.log('JOINCLUB CLUBID', clubID);
-                            database.collection('Clubs').doc(clubID).update({
+                            await database.collection('Clubs').doc(clubID).update({
                                 Members : clubMembers,
                                 Invites : clubInvites
                             })
@@ -192,18 +193,19 @@ app.use('/joinClub', async function (req, res){
     }
 })
 
-app.use(function(req, res, next){
+app.use(async function(req, res, next){
     const IdToken = req.body.IdToken;
     try{
-        admin.auth().verifyIdToken(IdToken)
-        .then((decodedToken) => {
-            console.log('Middleware Check -- User Found');
+        const decodedToken = await admin.auth().verifyIdToken(IdToken);
+        console.log('DecodedToken', decodedToken)
+        if (decodedToken) {
+            console.log('Middle Ware Check : User Found');
+            res.send({userUID : decodedToken.uid})
             next();
-        })
-        .catch((err) => {
-            console.log('HHey', err, 'User not found');
-            res.send({status : 400, statusmessage : 'User not found!'});
-        })
+        } else {
+            console.log('HHEY', 'User not found. Invalid Token');
+            res.send({status : 401, statusmessage : 'Invalid User.'})
+        }
     }
     catch(error){
         console.log('hhi', error);
