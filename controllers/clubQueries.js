@@ -23,34 +23,6 @@ exports.CreateClub = function (req, res) {
     }
 }
 
-exports.AddMembersToClub = async function (req, res) {
-    var invites = req.body; 
-    const newInvite = {'email': invites.email, 'accepted': false};
-    try {
-        const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get();
-        const clubInvites = getClubWithDocID.data().Invites;
-        const clubMemberLimit = getClubWithDocID.data().MemberLimit;
-        const clubMembers = getClubWithDocID.data().Members;
-        var clubMembersLength = clubMembers.length;
-
-        if (clubMembersLength < clubMemberLimit){
-            clubInvites.push(newInvite);
-            console.log ('Invites', clubInvites);
-            await database.collection('Clubs').doc(invites.clubID).update({
-                Invites : clubInvites
-            });
-            res.send({status : 200, statusmessage : 'Success'});
-        } else {
-            res.send({status : 400, statusmessage : 'Members Limit Reached'});
-        }
-    }
-    catch(err){
-        console.log(err);
-        res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request : 400'});
-    }
-}
-
-
 exports.GetClubsDataOfCurrentUser = async function (req, res) {
     const currentUserEmail = req.body.currentUserEmail;
     let createdClubIds = []; 
@@ -157,28 +129,34 @@ exports.DeleteClub = async function (req, res){
 
 exports.InviteMembers = async function (req, res){
     var invites = req.body; 
-    const newInvite = {'email': invites.email, 'accepted': false};
-    try {
-        const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get();
-        const clubInvites = getClubWithDocID.data().Invites;
-        const clubMemberLimit = getClubWithDocID.data().MemberLimit;
-        const clubMembers = getClubWithDocID.data().Members;
-        var clubMembersLength = clubMembers.length;
+    const validateEmail = validator.isEmail(invites.email);
+    console.log(validateEmail, 'ValidateEmail');
+    if (validateEmail){
+        const newInvite = {'email': invites.email, 'accepted': false};
+        try {
+            const getClubWithDocID = await database.collection('Clubs').doc(invites.clubID).get();
+            const clubInvites = getClubWithDocID.data().Invites;
+            const clubMemberLimit = getClubWithDocID.data().MemberLimit;
+            const clubMembers = getClubWithDocID.data().Members;
+            var clubMembersLength = clubMembers.length;
 
-        if (clubMembersLength < clubMemberLimit){
-            clubInvites.push(newInvite);
-            console.log ('Invites', clubInvites);
-            await database.collection('Clubs').doc(invites.clubID).update({
-                Invites : clubInvites
-            })
-            res.send({status : 200, statusmessage : 'Success'});
-        } else {
-            res.send({status : 400, statusmessage : 'Members Limit Reached'});
+            if (clubMembersLength < clubMemberLimit){
+                clubInvites.push(newInvite);
+                console.log ('Invites', clubInvites);
+                await database.collection('Clubs').doc(invites.clubID).update({
+                    Invites : clubInvites
+                })
+                res.send({status : 200, statusmessage : 'Success'});
+            } else {
+                res.send({status : 400, statusmessage : 'Members Limit Reached'});
+            }
         }
-    }
-    catch(err){
-        console.log(err);
-        res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request : 400'});
+        catch(err){
+            console.log(err);
+            res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request : 400'});
+        }
+    } else {
+        res.send({status : 400, statusmessage : 'Email Invalid'})
     }
 }
 
@@ -219,5 +197,79 @@ exports.LeaveClub = async function (req, res){
     }
     catch(err){
         res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request - I'});       
+    }
+}
+
+exports.DeleteMember = async function (req, res) {
+    const clubInfo = req.body;
+    var adminEmail;
+    var clubMembers;
+    var clubName;
+    var clubDocID;
+    var clubMemberDocID;
+    var clubMemberClubsJoined;
+    const clubID = clubInfo.clubID;
+    console.log(clubInfo);
+    await admin.auth().verifyIdToken(clubInfo.IdToken)
+    .then((decodedToken) => {
+        adminEmail = decodedToken.email;
+        console.log(decodedToken, decodedToken.email);
+    })
+    .catch((err) => {
+        console.log(err)
+    })
+    console.log(adminEmail)
+    if (adminEmail !== undefined){
+        let isUserAnAdmin;
+        let userQuery = await database.collection('Users').where('Email', '==', adminEmail).get()
+        userQuery.forEach((doc)=>{
+            isUserAnAdmin = doc.data().EmailVerified;
+        })       
+        console.log('Is user admin?', isUserAnAdmin);
+
+        if (isUserAnAdmin){
+            database.collection('Clubs').where('ClubID','==', clubID).get()
+            .then((snapshot) => {
+                snapshot.forEach((doc)=>{
+                    clubMembers = doc.data().Members;
+                    clubName = doc.data().ClubName;
+                    clubDocID = doc.id;
+                })
+                const memberId = clubMembers.findIndex(member => member.email === clubInfo.clubMemberEmail);
+                console.log(memberId, 'Member ID')
+                if (memberId >= 0){
+                    clubMembers.splice(memberId, 1);                
+                    database.collection('Clubs').doc(clubDocID).update({
+                        Members : clubMembers
+                    })
+                    .then(()=>{
+                        database.collection('Users').where('Email', '==', clubInfo.clubMemberEmail).get()
+                        .then((snapshot)=>{
+                            snapshot.forEach((doc)=>{
+                                clubMemberClubsJoined = doc.data().ClubsJoined;
+                                clubMemberDocID = doc.id;
+                            })
+
+                            const clubIdinClubsJoinedArr = clubMemberClubsJoined.findIndex(club => club.Club === clubName);
+                            console.log(clubIdinClubsJoinedArr, 'Club ID')
+                            clubMemberClubsJoined.splice(clubIdinClubsJoinedArr, 1);
+
+                            database.collection('Users').doc(clubMemberDocID).update({
+                                ClubsJoined : clubMemberClubsJoined
+                            })
+                            res.send({status : 200, statusmessage : 'Deleted Member'})
+                        })
+                        .catch((err) => {
+                            res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
+                        })
+                    })
+                    .catch((err)=>{
+                        console.log(err);
+                    })                    
+                } else {
+                    res.send({status : 400, errorMessage : err.message, statusmessage : 'Not a member of this club'})
+                }
+            })
+        }
     }
 }
