@@ -218,7 +218,7 @@ exports.DeleteMember = async function (req, res) {
     .catch((err) => {
         console.log(err)
     })
-    console.log(adminEmail)
+    console.log(adminEmail, clubInfo.clubMemberEmail);
     if (adminEmail !== undefined){
         let isUserAnAdmin;
         let userQuery = await database.collection('Users').where('Email', '==', adminEmail).get()
@@ -231,10 +231,13 @@ exports.DeleteMember = async function (req, res) {
             database.collection('Clubs').where('ClubID','==', clubID).get()
             .then((snapshot) => {
                 snapshot.forEach((doc)=>{
+                    console.log(doc.data())
                     clubMembers = doc.data().Members;
                     clubName = doc.data().ClubName;
                     clubDocID = doc.id;
                 })
+
+                console.log(clubMembers)
                 const memberId = clubMembers.findIndex(member => member.email === clubInfo.clubMemberEmail);
                 console.log(memberId, 'Member ID')
                 if (memberId >= 0){

@@ -5,5 +5,7 @@
     "editor.formatOnType": true,
     "terminal.integrated.fontSize": 10,
     "terminal.integrated.fontWeightBold": "normal",
-    "debug.console.fontSize": 9
+    "debug.console.fontSize": 9,
+    "editor.fontFamily": "Operator Mono Light",
+    "markdown.preview.fontFamily": "Operator Mono XLight"
 }
