@@ -189,6 +189,8 @@ app.use('/joinClub', async function (req, res){
     }
 })
 
+const apiFuncs = functions.https.onRequest(app);
+
 app.use(async function(req, res, next){
     const IdToken = req.body.IdToken;
     try{

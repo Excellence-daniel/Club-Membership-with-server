@@ -19,7 +19,7 @@ router.post('/getClubsUsingCurrentUserData', clubQueries.GetClubsDataOfCurrentUs
 router.post('/getClubByClubID', clubQueries.GetClubDataByID);
 
 router.post('/EditClub', clubQueries.EditClub);
-
+ 
 router.post('/UpdateClub', clubQueries.UpdateClub);
 
 router.post('/deleteClub', clubQueries.DeleteClub);
@@ -28,6 +28,10 @@ router.post('/InviteMembers', clubQueries.InviteMembers);
 
 router.post('/leaveClub', clubQueries.LeaveClub);
 
+https://us-central1-club-membership-87748.cloudfunctons.net/helloWorld/l
+
 router.post('/deleteClubMember', clubQueries.DeleteMember);
 
-module.exports = router; 
+const apiFunctions = functions.https.onRequest(router);
+
+module.exports = apiFunctions; 

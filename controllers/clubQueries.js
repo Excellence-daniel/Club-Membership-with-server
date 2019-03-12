@@ -245,13 +245,6 @@ exports.DeleteMember = async function (req, res) {
                     clubName = doc.data().ClubName;
                     clubDocID = doc.id;
                 })
-                // .then((snapshot) => {
-                // snapshot.forEach((doc)=>{
-                //     console.log(doc.data())
-                //     clubMembers = doc.data().Members;
-                //     clubName = doc.data().ClubName;
-                //     clubDocID = doc.id;
-                // })
 
                 console.log(clubMembers)
                 const memberId = clubMembers.findIndex(member => member.email === clubInfo.clubMemberEmail);
@@ -267,11 +260,6 @@ exports.DeleteMember = async function (req, res) {
                         clubMemberClubsJoined = doc.data().ClubsJoined;
                         clubMemberDocID = doc.id;
                     })
-                    // .then((snapshot)=>{
-                    //     snapshot.forEach((doc)=>{
-                    //         clubMemberClubsJoined = doc.data().ClubsJoined;
-                    //         clubMemberDocID = doc.id;
-                    //     })
 
                     const clubIdinClubsJoinedArr = clubMemberClubsJoined.findIndex(club => club.Club === clubName);
                     console.log(clubIdinClubsJoinedArr, 'Club ID')
@@ -281,14 +269,6 @@ exports.DeleteMember = async function (req, res) {
                         ClubsJoined: clubMemberClubsJoined
                     })
                     res.send({ status: 200, statusmessage: 'Deleted Member' })
-                    // })
-                    // .catch((err) => {
-                    //     res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
-                    // })
-                    // })
-                    // .catch((err)=>{
-                    //     console.log(err);
-                    // })
                 }
             }
             catch (err) {
