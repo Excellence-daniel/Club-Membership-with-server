@@ -38,7 +38,8 @@ exports.CurrentUserData = async function (req, res) {
     const userEmail = data.userEmail; 
     console.log('User Email', userEmail);  
     try {
-        const getUserQuery = await database.collection('Users').where('Email', '==', userEmail).get()   //get from collection USERS using email
+        const getUserQuery = await database.collection('Users').where('Email', '==', userEmail).get()
+        console.log(getUserQuery)   //get from collection USERS using email
         getUserQuery.forEach((doc) => {
             console.log('data', doc, doc.data());
             userData = doc.data();

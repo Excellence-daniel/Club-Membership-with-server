@@ -200,7 +200,6 @@ app.use(async function(req, res, next){
         console.log('DecodedToken', decodedToken)
         if (decodedToken) {
             console.log('Middle Ware Check : User Found');
-            res.send({userUID : decodedToken.uid})
             next();
         } else {
             console.log('HHEY', 'User not found. Invalid Token');
