@@ -4,15 +4,11 @@ var validator = require('validator');
 var admin = require('firebase-admin');
 var firebase = require('firebase');
 const multer = require('multer');
-const config = {
-    apiKey: 'AIzaSyAfZOg7lWBCdL3PUIhupZuYm18jx10bLZo',
-    authDomain: 'club-membership-87748.firebaseapp.com',
-    databaseURL: 'https://club-membership-87748.firebaseio.com',
-    projectId: 'club-membership-87748',
-  };
+const config = require('./config/config.js');
+
 firebase.initializeApp(config); 
 
-var serviceAccount = require('./club-membership-87748-firebase-adminsdk-v7lcs-484daf42c1.json');
+var serviceAccount = require('./config/club-membership-87748-firebase-adminsdk-v7lcs-484daf42c1.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
