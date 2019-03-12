@@ -139,7 +139,7 @@ app.use('/joinClub', async function (req, res){
                         clubInvites = snapshot.data().Invites;
                         clubMemberLimit = snapshot.data().MemberLimit;
                         clubID = snapshot.id;
-                        newClub = {'Club' : snapshot.data().ClubName, 'Type' : snapshot.data().ClubType};
+                        newClub = {'Club' : snapshot.data().ClubName, 'Type' : snapshot.data().ClubType, 'AdminEmail' : snapshot.data().AdminEmail};
                         console.log('CLUB ID', clubID);
                     })
                     //check if the user is alredy a member of the club. 
