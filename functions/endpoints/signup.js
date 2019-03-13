@@ -8,9 +8,8 @@ exports.signUp = function (req, res) {
     const numbers = /\d+/;
     const specialchars = /[ !@#$%^&*()`_+\-=[\]{};':'\\|,.<>/?]/;
     const isEmail = validator.isEmail(data.email);
-    const UserUUID = uuidv4();
+    const UserTokenID = uuidv4();
     let checkIfUserExists;
-    console.log(UserUUID);
     //check if the email data sent is an actual email
     if (data.password.length > 9 && numbers.test(data.password) && specialchars.test(data.password)) {
         if (isEmail) {      //validate email
@@ -32,7 +31,7 @@ exports.signUp = function (req, res) {
                                         Address: data.address,
                                         Password: data.password,
                                         ClubsJoined: [],
-                                        UserID: UserUUID
+                                        UserToken: UserTokenID
                                     }) //create user profile
                                         .then(() => {
                                             console.log('User sign in successful');
