@@ -85,7 +85,7 @@ app.use('/VerifyEmail', async(req,res)=>{
     let userData;
     let userID;
     try {
-        const getUserByID = await database.collection('Users').where('UserID', '==', userInfo.UserID).get();
+        const getUserByID = await database.collection('Users').where('UserID', '==', userInfo.UserToken).get();
         getUserByID.forEach((doc)=>{
             userData = doc.data(); 
             userID = doc.id;
