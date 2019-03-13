@@ -38,7 +38,7 @@ app.use('/signup', async function(req, res){
     const numbers = /\d+/;
     const specialchars = /[ !@#$%^&*()`_+\-=\[\]{};':'\\|,.<>\/?]/; 
     const isEmail = validator.isEmail(data.email)
-    const UserUUID = uuidv4();
+    const UserTokenID = uuidv4();
     console.log(UserUUID);
     //check if the email data sent is an actual email
     if (data.password.length > 9 && numbers.test(data.password) && specialchars.test(data.password)){
@@ -59,7 +59,7 @@ app.use('/signup', async function(req, res){
                         Address: data.address,
                         Password: data.password,
                         ClubsJoined: [],
-                        UserID: UserUUID
+                        UserToken: UserTokenID
                     })
                     console.log('User sign in successful');
                     res.send({ status : 200, signInStatus: 'success' });
