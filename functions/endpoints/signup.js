@@ -22,30 +22,30 @@ exports.signUp = function (req, res) {
                                 email: data.email,
                                 password: data.password
                             })  //create user auth
-                                .then(() => {
-                                    database.collection('Users').doc().set({
-                                        Name: data.name,
-                                        Email: data.email,
-                                        EmailVerified: false,
-                                        PhoneNumber: data.phone,
-                                        Address: data.address,
-                                        Password: data.password,
-                                        ClubsJoined: [],
-                                        UserToken: UserTokenID
-                                    }) //create user profile
-                                        .then(() => {
-                                            console.log('User sign in successful');
-                                            res.send({ status: 200, signInStatus: 'success' });
-                                        })
-                                        .catch((err) => {
-                                            console.log(err);
-                                            res.send({ status: err.code, statusmessage: err.message, errorMessage: 'Bad Request I' });
-                                        })
-                                })
-                                .catch((err) => {
-                                    console.log(err);
-                                    res.send({ status: err.code, statusmessage: err.message, errorMessage: 'Bad Request II' });
-                                })
+                            .then(() => {
+                                database.collection('Users').doc().set({
+                                    Name: data.name,
+                                    Email: data.email,
+                                    EmailVerified: false,
+                                    PhoneNumber: data.phone,
+                                    Address: data.address,
+                                    Password: data.password,
+                                    ClubsJoined: [],
+                                    UserToken: UserTokenID
+                                }) //create user profile
+                                    .then(() => {
+                                        console.log('User sign in successful');
+                                        res.send({ status: 200, signInStatus: 'success' });
+                                    })
+                                    .catch((err) => {
+                                        console.log(err);
+                                        res.send({ status: err.code, statusmessage: err.message, errorMessage: 'Bad Request I' });
+                                    })
+                            })
+                            .catch((err) => {
+                                console.log(err);
+                                res.send({ status: err.code, statusmessage: err.message, errorMessage: 'Bad Request II' });
+                            })
                         }
                         catch (err) {
                             console.log(err, err.message);
