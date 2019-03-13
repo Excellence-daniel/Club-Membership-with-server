@@ -220,25 +220,18 @@ exports.DeleteMember = async function (req, res) {
     catch (err) {
         console.log(err)
     }
-    // .then((decodedToken) => {
-    //     adminEmail = decodedToken.email;
-    //     console.log(decodedToken, decodedToken.email);
-    // })
-    // .catch((err) => {
-    //     console.log(err)
-    // })
     console.log(adminEmail, clubInfo.clubMemberEmail);
     if (adminEmail !== undefined){
         let isUserAnAdmin;
-        let userQuery = await database.collection('Users').where('Email', '==', adminEmail).get()
+        let userQuery = await database.collection('Users').where('Email', '==', adminEmail).get();
         userQuery.forEach((doc)=>{
             isUserAnAdmin = doc.data().EmailVerified;
-        })       
+        });       
         console.log('Is user admin?', isUserAnAdmin);
 
         if (isUserAnAdmin) {
             try {
-                const getClubQuery = await database.collection('Clubs').where('ClubID', '==', clubID).get()
+                const getClubQuery = await database.collection('Clubs').where('ClubID', '==', clubID).get();
                 getClubQuery.forEach((doc) => {
                     console.log(doc.data())
                     clubMembers = doc.data().Members;
@@ -275,7 +268,7 @@ exports.DeleteMember = async function (req, res) {
                 res.send({status : 400, statusmessage : err.message, errorMessage : 'Bad Request'});
             }
         } else {
-            res.send({status : 400, errorMessage : err.message, statusmessage : 'Not a member of this club'})
+            res.send({ status: 400, errorMessage: err.message, statusmessage: 'Not a member of this club' });
         }
     }
 }
