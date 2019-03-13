@@ -4,16 +4,8 @@ var validator = require('validator');
 var admin = require('firebase-admin');
 var firebase = require('firebase');
 const multer = require('multer');
-const config = require('./config/config.js');
 
-firebase.initializeApp(config); 
 
-var serviceAccount = require('./config/club-membership-87748-firebase-adminsdk-v7lcs-484daf42c1.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://club-membership-87748.firebaseio.com'
-});
 const database = admin.firestore();
 const cors = require('cors');
 var app = express();
