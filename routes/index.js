@@ -32,6 +32,6 @@ https://us-central1-club-membership-87748.cloudfunctons.net/helloWorld/l
 
 router.post('/deleteClubMember', clubQueries.DeleteMember);
 
-const apiFunctions = functions.https.onRequest(router);
+// const apiFunctions = functions.https.onRequest(router);
 
 module.exports = apiFunctions; 
