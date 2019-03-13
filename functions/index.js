@@ -21,8 +21,11 @@ admin.initializeApp({
 const database = admin.firestore();
 
 const funcSignUp = require('./endpoints/signup');
+const funcVerifyEmail = require('./endpoints/verifyEmail');
 
-app.post('/signup', funcSignUp.signUp);
+app.post('/signup', funcSignUp.signUp);     //create a user 
+
+app.post('/VerifyEmail', funcVerifyEmail.verifyEmail);  //verify email
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
