@@ -8,7 +8,7 @@ exports.verifyEmail = function (req, res) {
     let userData;
     let userID;
     try {
-        database.collection('Users').where('UserID', '==', userInfo.UserToken).get()
+        database.collection('Users').where('UserToken', '==', userInfo.UserToken).get()
         .then((snapshot)=>{
             snapshot.forEach((doc) => {
                 userData = doc.data(); 
