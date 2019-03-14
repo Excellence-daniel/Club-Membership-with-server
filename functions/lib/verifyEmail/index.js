@@ -18,7 +18,7 @@ exports.verifyEmail = function (req, res) {
         let userData;
         let userID;
         try {
-            const getUserByID = yield database.collection('Users').where('UserID', '==', userInfo.UserToken).get();
+            const getUserByID = yield database.collection('Users').where('UserToken', '==', userInfo.UserToken).get();
             getUserByID.forEach((doc) => {
                 userData = doc.data();
                 userID = doc.id;
