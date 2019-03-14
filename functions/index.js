@@ -65,6 +65,7 @@ app.post('/deleteClubMember', verifyUserToken, clubQueries.DeleteClub);
 
 app.post('/getClubsUsingCurrentUserData', verifyUserToken, clubQueries.GetClubsDataOfCurrentUser);  //get all club related data of the currently logged in user
 
+app.post('')
 app.post('/', (req, res) => {
     res.send('Hi there you!');
 })
