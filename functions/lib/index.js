@@ -53,5 +53,6 @@ const verifyUserToken = app.use(function (req, res, next) {
 app.post('/signup', index_1.signup);
 app.post('/VerifyEmail', index_2.verifyEmail);
 app.post('/getCurrentUserData', verifyUserToken, index_3.getCurrentUserData);
+app.post('/UpdateUser', verifyUserToken, index_3.UpdateUser);
 exports.ClubApp = functions.https.onRequest(app);
 //# sourceMappingURL=index.js.map

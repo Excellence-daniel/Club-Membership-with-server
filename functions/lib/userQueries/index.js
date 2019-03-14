@@ -39,4 +39,21 @@ exports.getCurrentUserData = function (req, res) {
         }
     });
 };
+exports.UpdateUser = function (req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const userData = req.body;
+        try {
+            yield database.collection('Users').doc(userData.userID).update({
+                Name: userData.Name,
+                Email: userData.Email,
+                Address: userData.Address,
+                PhoneNumber: userData.Phone
+            });
+            res.send({ status: 200, statusmessage: 'Success' });
+        }
+        catch (err) {
+            res.send({ status: 400, statusmessage: err.message, errorMessage: 'Bad Request' });
+        }
+    });
+};
 //# sourceMappingURL=index.js.map
