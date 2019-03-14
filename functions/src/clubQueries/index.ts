@@ -27,3 +27,16 @@ export const CreateClub = function (req, res) {
         res.send({ status: 400, statusmessage: 'Bad Request', errorMessage: err.message });   //if data is not gotten from the request body
     }
 }
+
+export const EditClub = async function (req, res){
+    const clubInfo = req.body;
+    let clubdata;
+    try {
+        const club = await database.collection('Clubs').doc(clubInfo.clubID).get();
+        clubdata = club.data();
+        res.send({status : 200, statusmessage : 'success', clubdata});
+    }
+    catch(err){
+        res.send({status : err, statusmessage : err.message, errorMessage : 'Bad Request'});
+    }
+}
