@@ -57,8 +57,13 @@ app.post('/deleteUser', verifyUserToken, userQueries.DeleteUser);   //to delete 
 
 app.post('/CreateClub', verifyUserToken, clubQueries.CreateClub);   //to create a club 
 
-app.post('/getClubsUsingCurrentUserData', verifyUserToken, clubQueries.GetClubsDataOfCurrentUser);  //get all club related data of the currently logged in user
+app.post('/EditClub', verifyUserToken, clubQueries.EditClub);   //to fetch a club with id for edit 
 
+app.post('/UpdateClub', verifyUserToken, clubQueries.UpdateClub);   //to update a club
+
+app.post('/deleteClubMember', verifyUserToken, clubQueries.DeleteClub);
+
+app.post('/getClubsUsingCurrentUserData', verifyUserToken, clubQueries.GetClubsDataOfCurrentUser);  //get all club related data of the currently logged in user
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
