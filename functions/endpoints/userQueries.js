@@ -13,11 +13,11 @@ exports.getCurrentUserData = function (req, res) {
         database.collection('Users').where('Email', '==', userEmail).get()
         .then((snapshot)=>{
             snapshot.forEach((doc) => {
-                console.log('data', doc, doc.data());
                 userData = doc.data();
                 userID = doc.id;
             })
             if (userData) {
+                console.log('UserData o', userData)
                 res.send({status : 200, UserEmail : userEmail, userData : userData, userID : userID});  //if data is gotten
             } else {
                 res.send({status : 400, UserEmail : userEmail, userData : null, userID : null, statusmessage : 'no matching documents in firebase'}); //data is not gotten 
@@ -26,7 +26,7 @@ exports.getCurrentUserData = function (req, res) {
         })
         .catch((err)=>{
             console.log(err.message);
-            res.send({status : err.code, statusmessage : err.message})
+            res.send({ status: err.code, statusmessage: err.message, UserEmail : null });
         })
     }
     catch(err){
@@ -65,7 +65,7 @@ exports.DeleteUser = function (req, res) {
             res.send({status : 200, statusmessage : 'User Profile Deleted'});            
         })
         .catch((err)=>{
-            res.send({status : err.code, statusmessage : err.message})
+            res.send({ status: err.code, statusmessage: err.message });
         })
     }
     catch(err){
