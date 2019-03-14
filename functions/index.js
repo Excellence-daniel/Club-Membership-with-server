@@ -50,9 +50,9 @@ app.post('/VerifyEmail', funcVerifyEmail.verifyEmail);  //verify email
 
 app.post('/getCurrentUserData', verifyUserToken, userQueries.getCurrentUserData); //get current user data
 
-app.post('/updateProfile', verifyUserToken, userQueries.UpdateProfile); //to update a user's profile
+app.post('/updateProfile', verifyUserToken, userQueries.UpdateUser); //to update a user's profile
 
-app.post('/deleteUser', verifyUserToken, userQueries.deleteUser);   //to delete a user
+app.post('/deleteUser', verifyUserToken, userQueries.DeleteUser);   //to delete a user
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
