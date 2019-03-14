@@ -44,3 +44,15 @@ export const UpdateUser = async function (req, res) {
         res.send({status : 400, statusmessage : err.message , errorMessage : 'Bad Request'});
     }
 }
+
+
+export const DeleteUser = async function (req, res) {
+    const userData = req.body;
+    try { 
+        await admin.auth().deleteUser(userData.uid);
+        res.send({status : 200, statusmessage : 'User Profile Deleted'});
+    }
+    catch(err){
+        res.send({status : 200, statusmessage : err.message, errorMessage : 'Error Deleting the user.'});
+    }
+}
