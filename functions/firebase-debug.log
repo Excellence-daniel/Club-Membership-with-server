@@ -1,0 +1,14 @@
+[debug] [2019-03-14T15:02:15.687Z] ----------------------------------------------------------------------
+[debug] [2019-03-14T15:02:15.695Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\shalom\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only functions
+[debug] [2019-03-14T15:02:15.696Z] CLI Version:   6.4.0
+[debug] [2019-03-14T15:02:15.696Z] Platform:      win32
+[debug] [2019-03-14T15:02:15.696Z] Node Version:  v10.15.0
+[debug] [2019-03-14T15:02:15.698Z] Time:          Thu Mar 14 2019 16:02:15 GMT+0100 (West Africa Standard Time)
+[debug] [2019-03-14T15:02:15.698Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2019-03-14T15:02:15.728Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2019-03-14T15:02:15.729Z] > authorizing via signed-in user
+[debug] [2019-03-14T15:02:15.730Z] [iam] checking project club-membership-87748 for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2019-03-14T15:02:15.736Z] >>> HTTP REQUEST POST https://cloudresourcemanager.googleapis.com/v1/projects/club-membership-87748:testIamPermissions  
+
+[debug] [2019-03-14T15:02:17.257Z] <<< HTTP RESPONSE 200
