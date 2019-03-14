@@ -17,13 +17,13 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: 'https://club-membership-87748.firebaseio.com'
 });
+const index_1 = require("./signup/index");
+const index_2 = require("./verifyEmail/index");
 // const database = admin.firestore();
-// // Start writing Firebase Functions
-// // https://firebase.google.com/docs/functions/typescript
-//
 app.post('/tryCloud', function (req, res) {
     res.send("Hello from Firebase!");
 });
-exports.helloWorld = functions.https.onRequest(app);
-// const validateEmail = validator.isEmail('ade@gmail.com');
+app.post('/signup', index_1.signup);
+app.post('/VerifyEmail', index_2.verifyEmail);
+exports.ClubApp = functions.https.onRequest(app);
 //# sourceMappingURL=index.js.map
