@@ -32,9 +32,10 @@ const index_3 = require("./userQueries/index");
 const verifyUserToken = app.use(function (req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const IdToken = req.body.IdToken;
+        console.log('It goot here!');
         try {
             const decodedToken = yield admin.auth().verifyIdToken(IdToken);
-            console.log('DecodedToken', decodedToken);
+            console.log('decoded Token', decodedToken);
             if (decodedToken) {
                 console.log('Middle Ware Check : User Found');
                 next();
@@ -52,7 +53,7 @@ const verifyUserToken = app.use(function (req, res, next) {
 });
 app.post('/signup', index_1.signup);
 app.post('/VerifyEmail', index_2.verifyEmail);
-app.post('/getCurrentUserData', verifyUserToken, index_3.getCurrentUserData);
+app.post('/getCurrentUserData', index_3.getCurrentUserData);
 app.post('/updateProfile', verifyUserToken, index_3.UpdateUser);
 app.post('/deleteUser', verifyUserToken, index_3.DeleteUser);
 exports.ClubApp = functions.https.onRequest(app);

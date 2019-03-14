@@ -2,7 +2,6 @@ import * as admin from 'firebase-admin';
 const database = admin.firestore();
 
 export const getCurrentUserData = async function (req, res) {
-    console.log('I got here!!');
     let userData; 
     let userID; 
     const data = req.body;

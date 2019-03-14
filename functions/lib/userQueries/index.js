@@ -12,6 +12,7 @@ const admin = require("firebase-admin");
 const database = admin.firestore();
 exports.getCurrentUserData = function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log('I got here!!');
         let userData;
         let userID;
         const data = req.body;
