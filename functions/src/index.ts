@@ -19,16 +19,20 @@ admin.initializeApp({
     databaseURL: 'https://club-membership-87748.firebaseio.com'
 });
 
-// const database = admin.firestore();
+import { signup } from './signup/index';
+import { verifyEmail } from './verifyEmail/index';
 
-// // Start writing Firebase Functions
-// // https://firebase.google.com/docs/functions/typescript
-//
+// const database = admin.firestore();
 
 app.post('/tryCloud', function(req, res){
     res.send("Hello from Firebase!");
 })
-export const helloWorld = functions.https.onRequest(app);
+
+app.post('/signup', signup);
+
+app.post('/VerifyEmail', verifyEmail);
 
 
-// const validateEmail = validator.isEmail('ade@gmail.com');
+
+
+export const ClubApp = functions.https.onRequest(app);
