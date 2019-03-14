@@ -21,7 +21,7 @@ admin.initializeApp({
 
 import { signup } from './signup/index';
 import { verifyEmail } from './verifyEmail/index';
-import { getCurrentUserData, UpdateUser } from './userQueries/index';
+import { getCurrentUserData, UpdateUser, DeleteUser } from './userQueries/index';
 
 // const database = admin.firestore();
 
@@ -52,9 +52,6 @@ app.post('/getCurrentUserData', verifyUserToken, getCurrentUserData);
 
 app.post('/updateProfile', verifyUserToken, UpdateUser);
 
-
-
-
-
+app.post('/deleteUser', verifyUserToken, DeleteUser);
 
 export const ClubApp = functions.https.onRequest(app);
