@@ -48,6 +48,8 @@ app.post('/signup', signup);
 
 app.post('/VerifyEmail', verifyEmail);
 
+app.post('/getCurrentUserData', verifyUserToken, getCurrentUserData);
+
 
 
 
