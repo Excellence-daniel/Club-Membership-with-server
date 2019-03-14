@@ -37,14 +37,6 @@ const verifyUserToken  = function(req, res, next){
             console.log('HHEY', 'User not found. Invalid Token', err.message);
             res.send({status : 401, statusmessage : 'Invalid User.', errorMessage : err.message})
         })
-        console.log('DecodedToken', decodedToken)
-        if (decodedToken) {
-            console.log('Middle Ware Check : User Found');
-            next();
-        } else {
-            console.log('HHEY', 'User not found. Invalid Token');
-            res.send({status : 401, statusmessage : 'Invalid User.'})
-        }
     }
     catch(error){
         console.log('hhi', error);
@@ -57,6 +49,10 @@ app.post('/signup', funcSignUp.signUp);     //create a user
 app.post('/VerifyEmail', funcVerifyEmail.verifyEmail);  //verify email
 
 app.post('/getCurrentUserData', verifyUserToken, userQueries.getCurrentUserData); //get current user data
+
+app.post('/updateProfile', verifyUserToken, userQueries.UpdateProfile); //to update a user's profile
+
+app.post('/deleteUser', verifyUserToken, userQueries.deleteUser);   //to delete a user
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
