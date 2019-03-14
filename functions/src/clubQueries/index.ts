@@ -40,3 +40,19 @@ export const EditClub = async function (req, res){
         res.send({status : err, statusmessage : err.message, errorMessage : 'Bad Request'});
     }
 }
+
+
+export const UpdateClub = async function (req, res){
+    const clubInfo = req.body; 
+    try {
+        await database.collection('Clubs').doc(clubInfo.id).update({
+            ClubName : clubInfo.clubname, 
+            ClubType : clubInfo.clubtype, 
+            MemberLimit : clubInfo.membersLimit
+        });
+        res.send({status : 200, statusmessage : 'success'});
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request'});
+    }
+}
