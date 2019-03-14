@@ -21,7 +21,7 @@ admin.initializeApp({
 
 import { signup } from './signup/index';
 import { verifyEmail } from './verifyEmail/index';
-import { getCurrentUserData } from './userQueries/index';
+import { getCurrentUserData, UpdateUser } from './userQueries/index';
 
 // const database = admin.firestore();
 
@@ -49,6 +49,10 @@ app.post('/signup', signup);
 app.post('/VerifyEmail', verifyEmail);
 
 app.post('/getCurrentUserData', verifyUserToken, getCurrentUserData);
+
+app.post('/UpdateUser', verifyUserToken, UpdateUser);
+
+
 
 
 
