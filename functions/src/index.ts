@@ -21,11 +21,27 @@ admin.initializeApp({
 
 import { signup } from './signup/index';
 import { verifyEmail } from './verifyEmail/index';
+import { getCurrentUserData } from './userQueries/index';
 
 // const database = admin.firestore();
 
-app.post('/tryCloud', function(req, res){
-    res.send("Hello from Firebase!");
+const verifyUserToken = app.use(async function(req, res, next){
+    const IdToken = req.body.IdToken;
+    try{
+        const decodedToken = await admin.auth().verifyIdToken(IdToken);
+        console.log('DecodedToken', decodedToken)
+        if (decodedToken) {
+            console.log('Middle Ware Check : User Found');
+            next();
+        } else {
+            console.log('HHEY', 'User not found. Invalid Token');
+            res.send({status : 401, statusmessage : 'Invalid User.'})
+        }
+    }
+    catch(error){
+        console.log('hhi', error);
+        res.send({status : 400, statusmessage : 'User not found!'});
+    }
 })
 
 app.post('/signup', signup);
