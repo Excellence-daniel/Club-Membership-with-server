@@ -22,7 +22,7 @@ admin.initializeApp({
 import { signup } from './signup/index';
 import { verifyEmail } from './verifyEmail/index';
 import { getCurrentUserData, UpdateUser, DeleteUser } from './userQueries/index';
-import { CreateClub, EditClub, UpdateClub, DeleteClub, GetClubsDataOfCurrentUser, InviteMembers } from './clubQueries/index';
+import { CreateClub, EditClub, UpdateClub, DeleteClub, GetClubsDataOfCurrentUser, InviteMembers, GetClubDataByID } from './clubQueries/index';
 
 // const database = admin.firestore();
 
@@ -64,10 +64,12 @@ app.post('/EditClub', verifyUserToken, EditClub);
 
 app.post('/UpdateClub', verifyUserToken, UpdateClub);
 
-app.post('/DeleteClub', verifyUserToken, DeleteClub);
+app.post('/deleteClub', verifyUserToken, DeleteClub);
 
 app.post('/getClubsUsingCurrentUserData', verifyUserToken, GetClubsDataOfCurrentUser);
 
 app.post('/InviteMembers', verifyUserToken, InviteMembers);
+
+app.post('/getClubByClubID', verifyUserToken, GetClubDataByID);
 
 export const ClubApp = functions.https.onRequest(app);
