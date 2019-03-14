@@ -5,7 +5,7 @@ var database = admin.firestore();
 
 exports.CreateClub = function (req, res) {
     const clubData = req.body;      //get request body
-    const clubID = uuidv4();
+    const clubToken = uuidv4();
     try {
         database.collection('Clubs').doc().set({
             ClubName : clubData.clubName, 
@@ -14,7 +14,7 @@ exports.CreateClub = function (req, res) {
             MemberLimit : clubData.memberLimit, 
             Members : [],
             Invites : [], 
-            ClubID : clubID
+            ClubToken : clubToken
         })
         .then(()=>{
             res.send({status : 200, statusmessage : 'Club Created'});            
@@ -25,5 +25,44 @@ exports.CreateClub = function (req, res) {
     }
     catch(err){
         res.send({status : 400, statusmessage : 'Bad Request', errorMessage : err.message});   //if data is not gotten from the request body
+    }
+}
+
+
+exports.GetClubsDataOfCurrentUser = function (req, res) {
+    const currentUserEmail = req.body.currentUserEmail;
+    let createdClubIds = []; 
+    let createdClubData = [];  
+    let joinedClubs = [];
+    console.log(currentUserEmail, 'Email');
+    try {
+        database.collection('Users').where('Email', '==', currentUserEmail).get()
+        .then((snapshot) => {
+            snapshot.forEach((doc) => {
+                joinedClubs.push(doc.data().ClubsJoined);
+                console.log('CLUBS JOINED', doc.data().ClubsJoined);
+            })
+            database.collection('Clubs').where('AdminEmail', '==', currentUserEmail).get()
+            .then((snapshot) => {
+                snapshot.forEach((doc) => {
+                    createdClubIds.push(doc.id);
+                    createdClubData.push(doc.data());
+                    console.log('CLUBS CREATED', 'Gotten all clubs');
+                })
+                res.send({ status: 200, statusmessage: 'Gotten all clubs with their IDs', clubIDs: createdClubIds, clubs: createdClubData, clubsjoined: joinedClubs });
+            })
+            .catch((err) => {
+                console.log(err.message);
+                res.send({status : err.code, statusmessage : err.message, clubID : [], clubs : [], clubsjoined : [[]]});
+            })
+        })
+        .catch((err) => {
+            console.log(err.message)
+            res.send({status : err.code, statusmessage : err.message, clubID : [], clubs : [], clubsjoined : [[]]});
+        })
+    }  
+    catch(err){
+        console.log(err.message);
+        res.send({status : 400, statusmessage : 'Bad Request', clubID : [], clubs : [], clubsjoined : [[]]});
     }
 }
