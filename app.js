@@ -85,7 +85,7 @@ app.use('/VerifyEmail', async(req,res)=>{
     let userData;
     let userID;
     try {
-        const getUserByID = await database.collection('Users').where('UserID', '==', userInfo.UserToken).get();
+        const getUserByID = await database.collection('Users').where('UserToken', '==', userInfo.UserToken).get();
         getUserByID.forEach((doc)=>{
             userData = doc.data(); 
             userID = doc.id; 
@@ -118,13 +118,13 @@ app.use('/joinClub', async function (req, res){
     let userData;
     let clubInvites;  
     let newClub;
-    const clubQuery = await database.collection('Clubs').where('ClubID', '==', clubInfo.clubID).get();
+    const clubQuery = await database.collection('Clubs').where('ClubToken', '==', clubInfo.clubToken).get();
     if (clubQuery.empty) {
         res.send({status : 400, statusmessage : 'The Club does not exist!', errorMessage  : 'Bad Request'});
     } else {
         try {
             const getUser = await database.collection('Users').where('Email', '==', clubInfo.userEmail).get();
-            const getClub = await database.collection('Clubs').where('ClubID', '==', clubInfo.clubID).get();
+            const getClub = await database.collection('Clubs').where('ClubToken', '==', clubInfo.clubToken).get();
             if (getUser.docs.length > 0){ 
                 //check if the club exists
                 if (getClub.empty === true){
