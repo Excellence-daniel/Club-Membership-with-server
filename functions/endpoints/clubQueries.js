@@ -29,6 +29,27 @@ exports.CreateClub = function (req, res) {
 }
 
 
+exports.EditClub = function (req, res){
+    const clubInfo = req.body;
+    let clubdata;
+    try {
+        database.collection('Clubs').doc(clubInfo.clubID).get()
+        .then((snapshot)=>{
+            snapshot.forEach((club) => {
+                clubdata = club.data();
+            })
+            res.send({status : 200, statusmessage : 'success', clubdata});
+        })
+        .catch((err)=>{
+            res.send({status : err.code, statusmessage : err.message});            
+        })
+    }
+    catch(err){
+        res.send({status : err, statusmessage : err.message, errorMessage : 'Bad Request'});
+    }
+}
+
+
 exports.GetClubsDataOfCurrentUser = function (req, res) {
     const currentUserEmail = req.body.currentUserEmail;
     let createdClubIds = []; 
