@@ -1,5 +1,5 @@
 import * as uuidv4 from 'uuid/v4';
-import * as validator from 'validator';
+// import * as validator from 'validator';
 import * as admin from 'firebase-admin';
 const database = admin.firestore();
 

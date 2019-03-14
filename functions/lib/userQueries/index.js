@@ -19,7 +19,7 @@ exports.getCurrentUserData = function (req, res) {
         console.log('User Email', userEmail);
         try {
             const getUserQuery = yield database.collection('Users').where('Email', '==', userEmail).get();
-            console.log(getUserQuery); //get from collection USERS using emailg
+            console.log(getUserQuery); //get from collection USERS using email
             getUserQuery.forEach((doc) => {
                 console.log('data', doc, doc.data());
                 userData = doc.data();
@@ -53,6 +53,18 @@ exports.UpdateUser = function (req, res) {
         }
         catch (err) {
             res.send({ status: 400, statusmessage: err.message, errorMessage: 'Bad Request' });
+        }
+    });
+};
+exports.DeleteUser = function (req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const userData = req.body;
+        try {
+            yield admin.auth().deleteUser(userData.uid);
+            res.send({ status: 200, statusmessage: 'User Profile Deleted' });
+        }
+        catch (err) {
+            res.send({ status: 200, statusmessage: err.message, errorMessage: 'Error Deleting the user.' });
         }
     });
 };

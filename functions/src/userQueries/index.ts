@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 const database = admin.firestore();
 
 export const getCurrentUserData = async function (req, res) {
+    console.log('I got here!!');
     let userData; 
     let userID; 
     const data = req.body;
@@ -9,7 +10,7 @@ export const getCurrentUserData = async function (req, res) {
     console.log('User Email', userEmail);  
     try {
         const getUserQuery = await database.collection('Users').where('Email', '==', userEmail).get()
-        console.log(getUserQuery)   //get from collection USERS using emailg
+        console.log(getUserQuery)   //get from collection USERS using email
         getUserQuery.forEach((doc) => {
             console.log('data', doc, doc.data());
             userData = doc.data();
