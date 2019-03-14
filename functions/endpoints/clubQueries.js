@@ -33,7 +33,7 @@ exports.EditClub = function (req, res){
     const clubInfo = req.body;
     let clubdata;
     try {
-        database.collection('Clubs').doc(clubInfo.clubID).get()
+        database.collection('Clubs').doc(clubInfo.clubToken).get()
         .then((snapshot)=>{
             snapshot.forEach((club) => {
                 clubdata = club.data();
@@ -68,6 +68,62 @@ exports.UpdateClub = function (req, res){
     catch(err){
         res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request'});
     }
+}
+
+
+exports.DeleteClub = function (req, res){
+    const clubInfo = req.body;
+    console.log(clubInfo);
+    try {
+        database.collection('Clubs').doc(clubInfo.clubID).get()
+        .then((club)=>{
+            const clubMembers = club.data().Members;
+            if (clubMembers.length > 0){
+                clubMembers.forEach((member)=>{
+                    var memberMail = member.email;
+                    database.collection('Users').where('Email', '==', memberMail).get()
+                    .then((snapshot)=>{
+                        snapshot.forEach((doc) => {
+                            var clubsjoined = doc.data().ClubsJoined;    //clubs joined of each member 
+                            var getClubIndex = clubsjoined.findIndex(idx => idx.Club === clubInfo.clubName);     //get the index of this club
+                            clubsjoined.splice(getClubIndex,1);
+                            database.collection('Users').doc(doc.id).update({
+                                ClubsJoined : clubsjoined
+                            })
+                            .then(()=>{
+                                database.collection('Clubs').doc(clubInfo.clubID).delete()
+                                .then(()=>{
+                                    res.send({status : 200, statusmessage : 'Club Deleted'});
+                                })
+                                .catch(()=>{
+                                    res.send({ status: err.code, statusmessage: err.message });
+                                })
+                            })
+                            .catch((err)=>{
+                                res.send({ status: err.code, statusmessage: err.message });
+                            })
+                        })
+                    })
+                    .catch((err)=>{
+                        res.send({ status: err.code, statusmessage: err.message });
+                    })
+                })    
+            }else {
+                database.collection('Clubs').doc(clubInfo.clubID).delete()
+                .then(()=>{
+                    res.send({ status: 200, statusmessage: 'Club Deleted' });
+                })
+                .catch((err)=>{
+                    res.send({ status: err.code, statusmessage: err.message });
+                })
+                res.send({status : 200, statusmessage : 'Club Deleted'});
+            }
+        })
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message});
+    }
+    console.log(club.data().Members);
 }
 
 
