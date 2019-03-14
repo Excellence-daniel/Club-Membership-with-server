@@ -61,11 +61,17 @@ app.post('/EditClub', verifyUserToken, clubQueries.EditClub);   //to fetch a clu
 
 app.post('/UpdateClub', verifyUserToken, clubQueries.UpdateClub);   //to update a club
 
-app.post('/deleteClubMember', verifyUserToken, clubQueries.DeleteClub);
+app.post('/deleteClub', verifyUserToken, clubQueries.DeleteClub);     //to delete a club
+
+// app.post('/leaveClub', verifyUserToken, clubQueries)
 
 app.post('/getClubsUsingCurrentUserData', verifyUserToken, clubQueries.GetClubsDataOfCurrentUser);  //get all club related data of the currently logged in user
 
-app.post('')
+app.post('/getClubByClubID', verifyUserToken, clubQueries.GetClubDataByID);      //get club data with its ID
+
+app.post('/InviteMembers', verifyToken, clubQueries.InviteMembers);    //invite member to a club with email
+
+
 app.post('/', (req, res) => {
     res.send('Hi there you!');
 })
