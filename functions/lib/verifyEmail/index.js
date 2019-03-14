@@ -8,8 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// import * as uuidv4 from 'uuid/v4';
-// import * as validator from 'validator';
 const admin = require("firebase-admin");
 const database = admin.firestore();
 exports.verifyEmail = function (req, res) {
