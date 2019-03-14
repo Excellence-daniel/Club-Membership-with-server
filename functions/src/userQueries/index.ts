@@ -27,3 +27,20 @@ export const getCurrentUserData = async function (req, res) {
         res.send({status : 400, UserEmail : null});
     }
 }
+
+
+export const UpdateUser = async function (req, res) {
+    const userData = req.body;
+    try{
+        await database.collection('Users').doc(userData.userID).update({
+            Name : userData.Name, 
+            Email : userData.Email,
+            Address : userData.Address,
+            PhoneNumber : userData.Phone
+        });
+        res.send({status : 200, statusmessage : 'Success'});
+    }
+    catch(err){
+        res.send({status : 400, statusmessage : err.message , errorMessage : 'Bad Request'});
+    }
+}
