@@ -8,7 +8,7 @@ export const verifyEmail = async function(req, res) {
     let userData;
     let userID;
     try {
-        const getUserByID = await database.collection('Users').where('UserID', '==', userInfo.UserToken).get();
+        const getUserByID = await database.collection('Users').where('UserToken', '==', userInfo.UserToken).get();
         getUserByID.forEach((doc)=>{
             userData = doc.data(); 
             userID = doc.id; 
