@@ -24,6 +24,7 @@ const funcSignUp = require('./endpoints/signup');
 const funcVerifyEmail = require('./endpoints/verifyEmail');
 const funcJoinClub = require('./endpoints/joinClub');
 const userQueries = require('./endpoints/userQueries');
+const clubQueries = require('./endpoints/clubQueries');
 
 const verifyUserToken  = function(req, res, next){
     const IdToken = req.body.IdToken;
@@ -53,6 +54,11 @@ app.post('/getCurrentUserData', verifyUserToken, userQueries.getCurrentUserData)
 app.post('/updateProfile', verifyUserToken, userQueries.UpdateUser); //to update a user's profile
 
 app.post('/deleteUser', verifyUserToken, userQueries.DeleteUser);   //to delete a user
+
+app.post('/CreateClub', verifyUserToken, clubQueries.CreateClub);   //to create a club 
+
+app.post('/getClubsUsingCurrentUserData', verifyUserToken, clubQueries.GetClubsDataOfCurrentUser);  //get all club related data of the currently logged in user
+
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
