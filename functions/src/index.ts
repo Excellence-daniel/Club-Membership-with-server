@@ -50,7 +50,7 @@ app.post('/VerifyEmail', verifyEmail);
 
 app.post('/getCurrentUserData', verifyUserToken, getCurrentUserData);
 
-app.post('/UpdateUser', verifyUserToken, UpdateUser);
+app.post('/updateProfile', verifyUserToken, UpdateUser);
 
 
 
