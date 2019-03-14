@@ -208,3 +208,27 @@ exports.InviteMembers = async function (req, res){
         res.send({status : 400, statusmessage : 'Email Invalid'})
     }
 }
+
+
+exports.GetClubDataByID = function (req, res){
+    const clubToken = req.body.clubToken;
+    let clubData, dClubID;
+    try {
+        database.collection('Clubs').where('ClubToken', '==', clubToken).get()
+        .then((getClubQuery)=>{
+            getClubQuery.forEach((doc) => {
+                console.log(doc.data());
+                clubData = doc.data();
+                dClubID = doc.id;
+            })
+            res.send({ status: 200, ClubData: clubData, ClubID: dClubID });
+        })
+        .catch((err)=>{
+            console.log(err.message);
+            res.send({status : err.code, statusmessage : err.message, ClubData : [], ClubID : []});
+        })
+    }
+    catch(err) {
+        res.send({status : 400, errorMessage : 'Bad Request', statusmessage : err.message, ClubData : [], ClubID : []});
+    }
+}
