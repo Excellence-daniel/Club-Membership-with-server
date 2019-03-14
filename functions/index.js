@@ -22,10 +22,41 @@ const database = admin.firestore();
 
 const funcSignUp = require('./endpoints/signup');
 const funcVerifyEmail = require('./endpoints/verifyEmail');
+const funcJoinClub = require('./endpoints/joinClub');
+const userQueries = require('./endpoints/userQueries');
+
+const verifyUserToken  = function(req, res, next){
+    const IdToken = req.body.IdToken;
+    try{
+        admin.auth().verifyIdToken(IdToken)
+        .then((decodedToken)=>{
+            console.log('Middle Ware Check : User Found');
+            next();
+        })
+        .catch((err)=>{
+            console.log('HHEY', 'User not found. Invalid Token', err.message);
+            res.send({status : 401, statusmessage : 'Invalid User.', errorMessage : err.message})
+        })
+        console.log('DecodedToken', decodedToken)
+        if (decodedToken) {
+            console.log('Middle Ware Check : User Found');
+            next();
+        } else {
+            console.log('HHEY', 'User not found. Invalid Token');
+            res.send({status : 401, statusmessage : 'Invalid User.'})
+        }
+    }
+    catch(error){
+        console.log('hhi', error);
+        res.send({status : 400, statusmessage : 'User not found!'});
+    }
+}
 
 app.post('/signup', funcSignUp.signUp);     //create a user 
 
 app.post('/VerifyEmail', funcVerifyEmail.verifyEmail);  //verify email
+
+app.post('/getCurrentUserData', verifyUserToken, userQueries.getCurrentUserData); //get current user data
 
 app.post('/', (req, res) => {
     res.send('Hi there you!');
