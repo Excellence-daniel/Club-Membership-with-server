@@ -29,10 +29,9 @@ const index_1 = require("./signup/index");
 const index_2 = require("./verifyEmail/index");
 const index_3 = require("./userQueries/index");
 // const database = admin.firestore();
-const verifyUserToken = app.use(function (req, res, next) {
+const verifyUserToken = function (req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const IdToken = req.body.IdToken;
-        console.log('It goot here!');
         try {
             const decodedToken = yield admin.auth().verifyIdToken(IdToken);
             console.log('decoded Token', decodedToken);
@@ -50,10 +49,10 @@ const verifyUserToken = app.use(function (req, res, next) {
             res.send({ status: 400, statusmessage: 'User not found!' });
         }
     });
-});
+};
 app.post('/signup', index_1.signup);
 app.post('/VerifyEmail', index_2.verifyEmail);
-app.post('/getCurrentUserData', index_3.getCurrentUserData);
+app.post('/getCurrentUserData', verifyUserToken, index_3.getCurrentUserData);
 app.post('/updateProfile', verifyUserToken, index_3.UpdateUser);
 app.post('/deleteUser', verifyUserToken, index_3.DeleteUser);
 exports.ClubApp = functions.https.onRequest(app);
