@@ -50,6 +50,27 @@ exports.EditClub = function (req, res){
 }
 
 
+exports.UpdateClub = function (req, res){
+    const clubInfo = req.body; 
+    try {
+        database.collection('Clubs').doc(clubInfo.id).update({
+            ClubName : clubInfo.clubname, 
+            ClubType : clubInfo.clubtype, 
+            MemberLimit : clubInfo.membersLimit
+        })
+        .then(()=>{
+            res.send({status : 200, statusmessage : 'success'});            
+        })
+        .catch((err)=>{
+            res.send({status : err.code, statusmessage : err.message})
+        })
+    }
+    catch(err){
+        res.send({status : err.code, statusmessage : err.message, errorMessage : 'Bad Request'});
+    }
+}
+
+
 exports.GetClubsDataOfCurrentUser = function (req, res) {
     const currentUserEmail = req.body.currentUserEmail;
     let createdClubIds = []; 
