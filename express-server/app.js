@@ -4,12 +4,11 @@ var validator = require('validator');
 var admin = require('firebase-admin');
 var firebase = require('firebase');
 const multer = require('multer');
-const config = require('./config/config.js');
+const config = require('../config/config');
 
 firebase.initializeApp(config); 
 
-var serviceAccount = require('./club-membership-87748-firebase-adminsdk-v7lcs-484daf42c1.json');
-// const serviceAccount = require('./c')
+var serviceAccount = require('../config/service_account.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -209,4 +208,4 @@ app.use(async function(req, res, next){
     }
 })
 
-app.use('/api', queriesRoute);
+app.use('', queriesRoute);

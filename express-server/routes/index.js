@@ -30,5 +30,6 @@ router.post('/InviteMembers', clubQueries.InviteMembers);
 
 router.post('/leaveClub', clubQueries.LeaveClub);
 
-
 router.post('/deleteClubMember', clubQueries.DeleteMember);
+
+module.exports = router;
