@@ -6,7 +6,6 @@ var firebase = require('firebase');
 const multer = require('multer');
 const config = require('../config/config');
 
-firebase.initializeApp(config); 
 
 var serviceAccount = require('../config/service_account.json');
 
