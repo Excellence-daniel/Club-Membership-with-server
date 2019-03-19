@@ -1,6 +1,6 @@
 # Club-Membership-with-server
 
-A club membership app that runs on an express server. 
+A club membership app that runs on an express server and on a cloud function 
 
 1. A user can sign up and an account is created with email and password on firestore. Before the account is created, the following is checked:
     i. Email is valid 
